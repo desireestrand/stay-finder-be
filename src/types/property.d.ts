@@ -9,6 +9,6 @@ interface NewProperty {
 }
 
 interface Property extends NewProperty {
-  id: string;
+  property_id: string;
   created_at: string;
 }

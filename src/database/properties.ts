@@ -17,7 +17,7 @@ export async function getPropertyById(id: string): Promise<Property | null> {
   const { data, error } = await supabase
     .from("properties")
     .select("*")
-    .eq("id", id)
+    .eq("property_id", id)
     .maybeSingle();
 
   if (error) {
@@ -49,7 +49,7 @@ export async function updateProperty(id: string, property: NewProperty): Promise
   const { data, error } = await supabase
     .from("properties")
     .update(property)
-    .eq("id", id)
+    .eq("property_id", id)
     .select()
     .maybeSingle();
 
@@ -70,11 +70,11 @@ export async function deleteProperty(id: string): Promise<Property | null> {
   const { error } = await supabase
     .from("properties")
     .delete()
-    .eq("id", id);
+    .eq("property_id", id);
 
   if (error) {
     throw new Error(error.message);
   }
-  
+
   return existingProperty;
 }
