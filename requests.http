@@ -1,0 +1,55 @@
+### Root
+GET http://localhost:3000/
+
+### Get all properties
+GET http://localhost:3000/properties
+
+### Get property by id
+GET http://localhost:3000/properties/00000000-0000-0000-0000-000000000001
+
+### Get property by invalid uuid
+GET http://localhost:3000/properties/not-a-valid-uuid
+
+### Create property
+POST http://localhost:3000/properties
+Content-Type: application/json
+
+{
+  "title": "Small studio in Malmö",
+  "description": "A compact studio close to cafés and the central station.",
+  "city": "Malmö",
+  "country": "Sweden",
+  "price_per_night": 990,
+  "max_guests": 2,
+  "image_url": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688"
+}
+
+### Create invalid property
+POST http://localhost:3000/properties
+Content-Type: application/json
+
+{
+  "title": "",
+  "description": "Missing valid title and invalid price.",
+  "city": "Malmö",
+  "country": "Sweden",
+  "price_per_night": 0,
+  "max_guests": 2
+}
+
+### Update property
+PUT http://localhost:3000/properties/00000000-0000-0000-0000-000000000001
+Content-Type: application/json
+
+{
+  "title": "Updated apartment in Stockholm",
+  "description": "Updated description.",
+  "city": "Stockholm",
+  "country": "Sweden",
+  "price_per_night": 1390,
+  "max_guests": 2,
+  "image_url": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267"
+}
+
+### Delete property
+DELETE http://localhost:3000/properties/00000000-0000-0000-0000-000000000003

@@ -1,5 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { env } from "./env.js";
 import dotenv from "dotenv";
 import { prettyJSON } from "hono/pretty-json";
 import propertyApp from "./routes/properties.js";
@@ -13,7 +14,7 @@ app.use(prettyJSON());
 
 app.get("/", (c) => {
   return c.json({
-    name: "StayFinder API"
+    name: "StayFinder API",
   });
 });
 
@@ -23,7 +24,8 @@ app.route("/bookings", bookingApp);
 serve(
   {
     fetch: app.fetch,
-    port: Number(process.env.HONO_PORT) || 3000  },
+    port: env.honoPort,
+  },
   (info) => {
     console.log(`Server is running on http://localhost:${info.port}`);
   },
