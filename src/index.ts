@@ -1,12 +1,9 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { env } from "./env.js";
-import dotenv from "dotenv";
 import { prettyJSON } from "hono/pretty-json";
 import propertyApp from "./routes/properties.js";
 import bookingApp from "./routes/bookings.js";
-
-dotenv.config();
 
 const app = new Hono({ strict: false });
 
