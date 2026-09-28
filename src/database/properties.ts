@@ -45,6 +45,21 @@ export async function createProperty(property: NewProperty): Promise<Property> {
   return data;
 }
 
+export async function patchProperty(id: string, updates: Partial<NewProperty>): Promise<Property | null> {
+  const { data, error } = await supabase
+    .from("properties")
+    .update(updates)
+    .eq("property_id", id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return data;
+}
+
 export async function updateProperty(id: string, property: NewProperty): Promise<Property | null> {
   const { data, error } = await supabase
     .from("properties")

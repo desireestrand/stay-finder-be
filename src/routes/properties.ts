@@ -43,6 +43,23 @@ propertyApp.post("/", propertyValidator, async (c) => {
   }
 });
 
+propertyApp.patch("/:id", propertyParamValidator, propertyOptionalValidator, async (c) => {
+  try {
+    const { id } = c.req.valid("param");
+    const body = c.req.valid("json");
+
+    const updatedProperty = await db.patchProperty(id, body);
+
+    if (!updatedProperty) {
+      return c.json({ error: "Property not found" }, 404);
+    }
+
+    return c.json(updatedProperty);
+  } catch (error) {
+    return c.json({ error: "Failed to update property" }, 400);
+  }
+})
+
 propertyApp.put("/:id", propertyParamValidator, propertyValidator, async (c) => {
   try {
     const { id } = c.req.valid("param");
