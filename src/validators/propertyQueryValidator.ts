@@ -21,19 +21,8 @@ const propertyQuerySchema = z.object({
   sort_order: z.enum(["asc", "desc"]).default("desc")
 });
 
-const propertyQueryValidator = zValidator(
-  "query",
-  propertyQuerySchema,
-  (result, c) => {
+export const propertyQueryValidator = zValidator("query", propertyQuerySchema, (result, c) => {
     if (!result.success) {
-      return c.json(
-        {
-          errors: result.error.issues
-        },
-        400
-      );
+      return c.json({ errors: result.error.issues }, 400);
     }
-  }
-);
-
-export default propertyQueryValidator;
+});

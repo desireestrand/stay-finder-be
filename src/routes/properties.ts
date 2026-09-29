@@ -4,8 +4,8 @@ import {
   propertyValidator,
   propertyOptionalValidator,
 } from "../validators/propertyValidator.js";
-import propertyParamValidator from "../validators/propertyParamValidator.js";
-import propertyQueryValidator from "../validators/propertyQueryValidator.js";
+import { propertyParamValidator } from "../validators/propertyParamValidator.js";
+import { propertyQueryValidator } from "../validators/propertyQueryValidator.js";
 
 const propertyApp = new Hono({ strict: false });
 
