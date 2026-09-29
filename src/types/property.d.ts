@@ -1,6 +1,5 @@
 interface Property {
   property_id: string;
-  created_at: string;
   title: string;
   description: string;
   city: string;
@@ -8,6 +7,7 @@ interface Property {
   price_per_night: number;
   max_guests: number;
   image_url?: string | null;
+  created_at: string;
 }
 
 type NewProperty = Omit<Property, "property_id" | "created_at">;

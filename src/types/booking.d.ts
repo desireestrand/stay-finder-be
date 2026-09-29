@@ -1,15 +1,17 @@
-interface NewBooking {
-  booking_id?: string;
+type BookingStatus = "pending" | "confirmed" | "cancelled";
+
+interface Booking {
+  booking_id: string;
   property_id: string;
   guest_name: string;
   guest_email: string;
   check_in: string;
   check_out: string;
   guests: number;
-  status?: "pending" | "confirmed" | "cancelled";
+  status: BookingStatus;
+  created_at: string;
 }
 
-interface Booking extends NewBooking {
-  booking_id: string;
-  status: "pending" | "confirmed" | "cancelled";
-}
+type NewBooking = Omit<Booking, "booking_id" | "created_at" | "status"> & {
+  status?: BookingStatus;
+};
