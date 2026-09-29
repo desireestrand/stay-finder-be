@@ -15,3 +15,8 @@ interface Booking {
 type NewBooking = Omit<Booking, "booking_id" | "created_at" | "status"> & {
   status?: BookingStatus;
 };
+
+type BookingQuery = {
+  from?: string;
+  to?: string;
+};

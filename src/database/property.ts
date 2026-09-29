@@ -4,7 +4,6 @@ import type { PaginatedListResponse } from "../types/global.js";
 
 const TABLE_NAME = "properties";
 
-// Secure and controlled select
 const SELECT_QUERY_LIST = [
   "property_id",
   "title",

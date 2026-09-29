@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import * as db from "../database/properties.js";
+import * as db from "../database/property.js";
 import {
   propertyValidator,
   propertyOptionalValidator,
@@ -48,9 +48,9 @@ propertyApp.get("/:id", propertyParamValidator, async (c) => {
 
 propertyApp.post("/", propertyValidator, async (c) => {
   try {
-    const newProperty: NewProperty = c.req.valid("json");
+    const body: NewProperty = c.req.valid("json");
 
-    const property = await db.createProperty(newProperty);
+    const property = await db.createProperty(body);
 
     return c.json(property, 201);
   } catch (error) {

@@ -3,8 +3,8 @@ import { Hono } from "hono";
 import { env } from "./env.js";
 import { prettyJSON } from "hono/pretty-json";
 
-import propertyApp from "./routes/properties.js";
-import bookingApp from "./routes/bookings.js";
+import propertyApp from "./routes/property.js";
+import bookingApp from "./routes/booking.js";
 
 const app = new Hono({ strict: false });
 
