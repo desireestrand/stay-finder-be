@@ -1,4 +1,6 @@
-interface NewProperty {
+interface Property {
+  property_id: string;
+  created_at: string;
   title: string;
   description: string;
   city: string;
@@ -8,17 +10,9 @@ interface NewProperty {
   image_url?: string | null;
 }
 
-interface Property extends NewProperty {
-  property_id: string;
-  created_at: string;
-}
+type NewProperty = Omit<Property, "property_id" | "created_at">;
 
-type PropertySortBy =
-  | "title"
-  | "city"
-  | "price_per_night"
-  | "created_at";
-
+type PropertySortBy = "title" | "city" | "price_per_night" | "created_at";
 type SortOrder = "asc" | "desc";
 
 type PropertyListQuery = {

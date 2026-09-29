@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { env } from "./env.js";
 import { prettyJSON } from "hono/pretty-json";
+
 import propertyApp from "./routes/properties.js";
 import bookingApp from "./routes/bookings.js";
 
