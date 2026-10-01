@@ -11,7 +11,15 @@ const bookingSchema = z.object({
   status: z.enum(["pending", "confirmed", "cancelled"]).optional(),
 });
 
+const bookingOptionalSchema = bookingSchema.partial();
+
 export const bookingValidator = zValidator("json", bookingSchema, (result, c) => {
+  if (!result.success) {
+    return c.json({ errors: result.error.issues }, 400);
+  }
+});
+
+export const bookingOptionalValidator = zValidator("json", bookingOptionalSchema, (result, c) => {
   if (!result.success) {
     return c.json({ errors: result.error.issues }, 400);
   }

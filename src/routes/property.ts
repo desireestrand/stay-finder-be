@@ -65,9 +65,9 @@ propertyApp.patch(
   async (c) => {
     try {
       const { id } = c.req.valid("param");
-      const body = c.req.valid("json");
+      const updates = c.req.valid("json");
 
-      const updatedProperty = await db.patchProperty(id, body);
+      const updatedProperty = await db.patchProperty(id, updates);
 
       if (!updatedProperty) {
         return c.json({ error: "Property not found" }, 404);

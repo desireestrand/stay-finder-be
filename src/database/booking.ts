@@ -79,3 +79,57 @@ export async function createBooking(booking: NewBooking): Promise<Booking> {
 
   return data;
 }
+
+export async function patchBooking(
+  id: string,
+  updates: Partial<NewBooking>,
+): Promise<Booking | null> {
+  const { data, error }: PostgrestSingleResponse<Booking | null> =
+    await supabase
+      .from(TABLE_NAME)
+      .update(updates)
+      .eq(QUERY_ID, id)
+      .select(SELECT_QUERY)
+      .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function updateBooking(
+  id: string,
+  booking: NewBooking,
+): Promise<Booking | null> {
+  const { data, error }: PostgrestSingleResponse<Booking | null> =
+    await supabase
+      .from(TABLE_NAME)
+      .update(booking)
+      .eq(QUERY_ID, id)
+      .select(SELECT_QUERY)
+      .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function deleteBooking(id: string): Promise<Booking | null> {
+  const { data, error }: PostgrestSingleResponse<Booking | null> =
+    await supabase
+      .from(TABLE_NAME)
+      .delete()
+      .eq(QUERY_ID, id)
+      .select(SELECT_QUERY)
+      .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
