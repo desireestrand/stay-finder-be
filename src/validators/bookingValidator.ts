@@ -8,7 +8,7 @@ const bookingSchema = z.object({
   check_in: z.string().min(1, "Check-in date is required"),
   check_out: z.string().min(1, "Check-out date is required"),
   guests: z.number().int().min(1, "Guests must be greater than 0"),
-  status: z.enum(["pending", "confirmed", "cancelled"]).optional(),
+  status: z.enum(["pending", "confirmed", "cancelled"], 'Invalid status. Must be one of: "pending", "confirmed", "cancelled".').optional(),
 });
 
 const bookingOptionalSchema = bookingSchema.partial();

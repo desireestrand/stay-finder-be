@@ -8,10 +8,11 @@ const propertySchema = z.object({
   country: z.string().min(1, "Country is required"),
   price_per_night: z.number().int().positive("Price must be greater than 0"),
   max_guests: z.number().int().positive("Max guests must be greater than 0"),
+  kind: z.enum(["apartment", "villa", "cabin"], 'Invalid kind. Must be one of: "apartment", "villa", "cabin".'),
   image_url: z.string().url("Image URL must be a valid URL").optional().nullable()
 });
 
-const porpertyOptionalSchema = propertySchema.partial();
+const propertyOptionalSchema = propertySchema.partial();
 
 export const propertyValidator = zValidator("json", propertySchema, (result, c) => {
   if (!result.success) {
@@ -19,7 +20,7 @@ export const propertyValidator = zValidator("json", propertySchema, (result, c) 
   }
 });
 
-export const propertyOptionalValidator = zValidator("json", porpertyOptionalSchema, (result, c) => {
+export const propertyOptionalValidator = zValidator("json", propertyOptionalSchema, (result, c) => {
   if (!result.success) {
     return c.json({ errors: result.error.issues }, 400);
   }

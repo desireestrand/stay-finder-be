@@ -12,6 +12,7 @@ const SELECT_QUERY_LIST = [
   "country",
   "price_per_night",
   "max_guests",
+  "kind",
   "image_url",
   "created_at",
 ] as const;
@@ -19,6 +20,7 @@ const SELECT_QUERY_LIST = [
 const SELECT_QUERY = SELECT_QUERY_LIST.join(", ");
 
 const QUERY_ID = "property_id";
+const QUERY_KIND = "kind";
 
 export async function getProperties(
   query: PropertyListQuery,
@@ -68,6 +70,21 @@ export async function getProperties(
     offset: query.offset,
     limit: query.limit,
   };
+}
+
+export async function getPropertiesByKind(
+  kind: PropertyKind,
+): Promise<Property[]> {
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .select(SELECT_QUERY)
+    .eq(QUERY_KIND, kind);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data as unknown as Property[]) ?? [];
 }
 
 export async function getPropertyById(id: string): Promise<Property | null> {

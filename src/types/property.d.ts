@@ -1,3 +1,5 @@
+type PropertyKind = "apartment" | "villa" | "cabin";
+
 interface Property {
   property_id: string;
   title: string;
@@ -6,6 +8,7 @@ interface Property {
   country: string;
   price_per_night: number;
   max_guests: number;
+  kind: PropertyKind;
   image_url?: string | null;
   created_at: string;
 }

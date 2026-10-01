@@ -30,6 +30,22 @@ propertyApp.get("/", propertyQueryValidator, async (c) => {
   }
 });
 
+propertyApp.get("/kind/:kind", async (c) => {
+  try {
+    const kind = c.req.param("kind");
+
+    if (kind != "apartment" && kind != "villa" && kind != "cabin") {
+      return c.json({ error: 'Invalid kind. Must be one of: "apartment", "villa", "cabin"' }, 400);
+    }
+
+    const properties = await db.getPropertiesByKind(kind);
+
+    return c.json(properties);
+  } catch (error) {
+    return c.json({ error: "Failed to fetch properties by kind"})
+  }
+});
+
 propertyApp.get("/:id", propertyParamValidator, async (c) => {
   try {
     const { id } = c.req.valid("param");
