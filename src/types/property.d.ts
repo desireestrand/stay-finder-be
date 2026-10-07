@@ -15,6 +15,8 @@ interface Property {
 
 type NewProperty = Omit<Property, "property_id" | "created_at">;
 
+type PropertyValidKey = keyof Property
+
 type PropertySortBy = "title" | "city" | "price_per_night" | "created_at";
 type SortOrder = "asc" | "desc";
 

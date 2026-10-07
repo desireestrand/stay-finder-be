@@ -16,6 +16,8 @@ type NewBooking = Omit<Booking, "booking_id" | "created_at" | "status"> & {
   status?: BookingStatus;
 };
 
+type BookingValidKey = keyof Booking
+
 type BookingQuery = {
   from?: string;
   to?: string;

@@ -1,9 +1,11 @@
-import type { PostgrestSingleResponse } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabase.js";
+import type {
+  SupabaseClient,
+  PostgrestSingleResponse,
+} from "@supabase/supabase-js";
 
 const TABLE_NAME = "bookings";
 
-const SELECT_QUERY_LIST = [
+const SELECT_QUERY_LIST: BookingValidKey[] = [
   "booking_id",
   "property_id",
   "guest_name",
@@ -13,13 +15,16 @@ const SELECT_QUERY_LIST = [
   "guests",
   "status",
   "created_at",
-] as const;
+];
 
 const SELECT_QUERY = SELECT_QUERY_LIST.join(", ");
 
 const QUERY_ID = "booking_id";
 
-export async function getBookings(query: BookingQuery): Promise<Booking[]> {
+export async function getBookings(
+  supabase: SupabaseClient,
+  query?: BookingQuery,
+): Promise<Booking[]> {
   let supabaseQuery = supabase
     .from(TABLE_NAME)
     .select(SELECT_QUERY)
@@ -42,7 +47,10 @@ export async function getBookings(query: BookingQuery): Promise<Booking[]> {
   return (data as unknown as Booking[]) ?? [];
 }
 
-export async function getBookingById(id: string): Promise<Booking | null> {
+export async function getBookingById(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<Booking | null> {
   const { data, error }: PostgrestSingleResponse<Booking | null> =
     await supabase
       .from(TABLE_NAME)
@@ -57,7 +65,10 @@ export async function getBookingById(id: string): Promise<Booking | null> {
   return data;
 }
 
-export async function createBooking(booking: NewBooking): Promise<Booking> {
+export async function createBooking(
+  supabase: SupabaseClient,
+  booking: NewBooking,
+): Promise<Booking> {
   const bookingToInsert = {
     ...booking,
     status: booking.status ?? "pending",
@@ -81,6 +92,7 @@ export async function createBooking(booking: NewBooking): Promise<Booking> {
 }
 
 export async function patchBooking(
+  supabase: SupabaseClient,
   id: string,
   updates: Partial<NewBooking>,
 ): Promise<Booking | null> {
@@ -100,6 +112,7 @@ export async function patchBooking(
 }
 
 export async function updateBooking(
+  supabase: SupabaseClient,
   id: string,
   booking: NewBooking,
 ): Promise<Booking | null> {
@@ -118,7 +131,10 @@ export async function updateBooking(
   return data;
 }
 
-export async function deleteBooking(id: string): Promise<Booking | null> {
+export async function deleteBooking(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<Booking | null> {
   const { data, error }: PostgrestSingleResponse<Booking | null> =
     await supabase
       .from(TABLE_NAME)

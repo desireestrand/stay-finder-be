@@ -1,14 +1,29 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
 import { env } from "./env.js";
+import { optionalAuth } from "./middleware/auth.js";
+import auth from "./routes/auth.js";
+import properties from "./routes/property.js";
+import bookings from "./routes/booking.js";
 import { prettyJSON } from "hono/pretty-json";
-
-import propertyApp from "./routes/property.js";
-import bookingApp from "./routes/booking.js";
 
 const app = new Hono({ strict: false });
 
 app.use(prettyJSON());
+
+app.use(
+  "*",
+  cors({
+    origin: env.frontendUrl,
+    credentials: true,
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type"],
+  }),
+);
+
+app.use("*", optionalAuth);
 
 app.get("/", (c) => {
   return c.json({
@@ -16,8 +31,27 @@ app.get("/", (c) => {
   });
 });
 
-app.route("/properties", propertyApp);
-app.route("/bookings", bookingApp);
+app.route("/auth", auth);
+app.route("/properties", properties);
+app.route("/bookings", bookings);
+
+app.onError((error, c) => {
+  if (error instanceof HTTPException) {
+    return c.json(
+      {
+        error: error.message,
+      },
+      error.status,
+    );
+  }
+
+  return c.json(
+    {
+      error: "Internal server error",
+    },
+    500,
+  );
+});
 
 serve(
   {

@@ -53,3 +53,44 @@ Content-Type: application/json
 
 ### Delete property
 DELETE http://localhost:3000/properties/00000000-0000-0000-0000-000000000003
+
+### Register
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "alex@example.com",
+  "password": "password123"
+}
+
+### Login
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "alex@example.com",
+  "password": "password123"
+}
+
+### Me
+GET http://localhost:3000/auth/me
+
+### Logout
+POST http://localhost:3000/auth/logout
+
+### Public route
+GET http://localhost:3000/properties
+
+### Protected route
+POST http://localhost:3000/properties
+Content-Type: application/json
+
+{
+  "title": "Logged in user apartment",
+  "description": "A property created through a protected route.",
+  "city": "Stockholm",
+  "country": "Sweden",
+  "price_per_night": 1200,
+  "max_guests": 2,
+  "image_url": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267"
+}

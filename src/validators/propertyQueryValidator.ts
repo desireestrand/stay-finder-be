@@ -1,5 +1,6 @@
 import * as z from "zod";
 import { zValidator } from "@hono/zod-validator";
+import { getValidatorError } from "../utils/validation.js";
 
 const propertyQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(10),
@@ -23,6 +24,6 @@ const propertyQuerySchema = z.object({
 
 export const propertyQueryValidator = zValidator("query", propertyQuerySchema, (result, c) => {
     if (!result.success) {
-      return c.json({ errors: result.error.issues }, 400);
+      return c.json(getValidatorError(result.error), 400);
     }
 });
