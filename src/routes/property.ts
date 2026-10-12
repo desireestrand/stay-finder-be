@@ -7,16 +7,18 @@ import {
 import { propertyKindParamValidator, propertyParamValidator } from "../validators/propertyParamValidator.js";
 import { propertyQueryValidator } from "../validators/propertyQueryValidator.js";
 import { requireAuth } from "../middleware/auth.js";
+import type { User } from "@supabase/supabase-js";
+import type { NewProperty, Property } from "../types/property.js";
 
 const properties = new Hono({ strict: false });
 
 properties.get("/", propertyQueryValidator, async (c) => {
-  const query = c.req.valid("query");
+  const filters = c.req.valid("query");
 
   try {
     const supabase = c.get("supabase");
 
-    const properties = await db.getProperties(supabase, query);
+    const properties = await db.getProperties(supabase, filters);
 
     return c.json(properties);
   } catch (error) {
@@ -24,8 +26,8 @@ properties.get("/", propertyQueryValidator, async (c) => {
       {
         data: [],
         count: 0,
-        offset: query.offset,
-        limit: query.limit,
+        offset: filters.offset,
+        limit: filters.limit,
         error: "Failed to fetch properties",
       },
       500,
@@ -39,9 +41,9 @@ properties.get("/kind/:kind", propertyKindParamValidator, propertyQueryValidator
 
     const { kind } = c.req.valid("param");
 
-    const query = c.req.valid("query");
+    const filters = c.req.valid("query");
 
-    const properties = await db.getPropertiesByKind(supabase, kind, query);
+    const properties = await db.getPropertiesByKind(supabase, kind, filters);
 
     return c.json(properties);
   } catch (error) {
@@ -53,9 +55,9 @@ properties.get("/:id", propertyParamValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
 
-    const { id } = c.req.valid("param");
+    const { propertyId } = c.req.valid("param");
 
-    const property = await db.getPropertyById(supabase, id);
+    const property = await db.getPropertyById(supabase, propertyId);
 
     if (!property) {
       return c.json({ error: "Property not found" }, 404);
@@ -73,7 +75,12 @@ properties.post("/", requireAuth, propertyValidator, async (c) => {
 
     const body: NewProperty = c.req.valid("json");
 
-    const property = await db.createProperty(supabase, body);
+    const user = c.get("user") as User;
+
+    const property = await db.createProperty(supabase, {
+      ...body,
+      user_id: user.id
+    });
 
     return c.json(property, 201);
   } catch (error) {
@@ -90,11 +97,13 @@ properties.patch(
     try {
       const supabase = c.get("supabase");
 
-      const { id } = c.req.valid("param");
+      const { propertyId } = c.req.valid("param");
 
-      const updates = c.req.valid("json");
+      const updates: Partial<Property> = c.req.valid("json");
 
-      const updatedProperty = await db.patchProperty(supabase, id, updates);
+      delete updates.user_id
+
+      const updatedProperty = await db.patchPropertyById(supabase, propertyId, updates);
 
       if (!updatedProperty) {
         return c.json({ error: "Property not found" }, 404);
@@ -116,11 +125,13 @@ properties.put(
     try {
       const supabase = c.get("supabase");
 
-      const { id } = c.req.valid("param");
+      const { propertyId } = c.req.valid("param");
 
       const body: NewProperty = c.req.valid("json");
 
-      const updatedProperty = await db.updateProperty(supabase, id, body);
+      delete body.user_id
+
+      const updatedProperty = await db.updatePropertyById(supabase, propertyId, body);
 
       if (!updatedProperty) {
         return c.json({ error: "Property not found" }, 404);
@@ -137,9 +148,9 @@ properties.delete("/:id", requireAuth, propertyParamValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
 
-    const { id } = c.req.valid("param");
+    const { propertyId } = c.req.valid("param");
 
-    const deletedProperty = await db.deleteProperty(supabase, id);
+    const deletedProperty = await db.deletePropertyById(supabase, propertyId);
 
     if (!deletedProperty) {
       return c.json({ error: "Property not found" }, 404);

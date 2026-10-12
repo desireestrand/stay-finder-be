@@ -6,7 +6,18 @@ const bookingParamSchema = z.object({
   id: z.uuid("Booking ID must be a valid UUID"),
 });
 
+const propertyAndBookingParamSchema = z.object({
+  propertyId: z.uuid("Property ID must be a valid UUID"),
+  bookingId: z.uuid("Booking ID must be a valid UUID"),
+});
+
 export const bookingParamValidator = zValidator("param", bookingParamSchema, (result, c) => {
+  if (!result.success) {
+    return c.json(getValidatorError(result.error), 400);
+  }
+});
+
+export const propertyAndBookingParamValidator = zValidator("param", propertyAndBookingParamSchema, (result, c) => {
   if (!result.success) {
     return c.json(getValidatorError(result.error), 400);
   }

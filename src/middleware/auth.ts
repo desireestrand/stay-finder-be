@@ -5,9 +5,10 @@ import { createServerClient } from "@supabase/ssr";
 import { env } from "../env.js";
 import { supabaseKey, supabaseUrl } from "../lib/supabase.js";
 import type { BasicSupabaseClient } from "../types/supabase.js";
+import type { Database } from "../types/database.types.js";
 
 function createSupabaseForRequest(c: Context): BasicSupabaseClient {
-  return createServerClient(supabaseUrl, supabaseKey, {
+  return createServerClient<Database>(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         const cookies = getCookie(c);
@@ -44,7 +45,7 @@ async function setSupabaseContext(c: Context): Promise<void> {
 
   const supabase = createSupabaseForRequest(c);
 
-  c.set("supabase", supabase);
+  c.set("supabase", supabase as BasicSupabaseClient);
 
   const {
     data: { user },

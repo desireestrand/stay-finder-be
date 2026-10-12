@@ -1,13 +1,13 @@
-import type {
-  SupabaseClient,
-  PostgrestSingleResponse,
-} from "@supabase/supabase-js";
+import type { PostgrestSingleResponse } from "@supabase/supabase-js";
+import type { BasicSupabaseClient } from "../types/supabase.js";
+import type { Booking, BookingFilter, BookingValidKey, BookingBody, NewBooking } from "../types/booking.js";
 
 const TABLE_NAME = "bookings";
 
 const SELECT_QUERY_LIST: BookingValidKey[] = [
   "booking_id",
   "property_id",
+  "user_id",
   "guest_name",
   "guest_email",
   "check_in",
@@ -20,25 +20,45 @@ const SELECT_QUERY_LIST: BookingValidKey[] = [
 const SELECT_QUERY = SELECT_QUERY_LIST.join(", ");
 
 const QUERY_ID = "booking_id";
+const QUERY_PROPERTY_ID = "property_id";
 
-export async function getBookings(
-  supabase: SupabaseClient,
-  query?: BookingQuery,
+export async function getBookingsByUserId(
+  supabase: BasicSupabaseClient,
+  userId: string,
 ): Promise<Booking[]> {
-  let supabaseQuery = supabase
+  const { data, error } = await supabase
     .from(TABLE_NAME)
     .select(SELECT_QUERY)
-    .order("created_at", { ascending: false });
+    .eq("user_id", userId)
+    .order("check_in", { ascending: true });
 
-  if (query?.from) {
-    supabaseQuery = supabaseQuery.gte("check_in", query.from);
+  if (error) {
+    throw new Error(error.message);
   }
 
-  if (query?.to) {
-    supabaseQuery = supabaseQuery.lte("check_in", query.to);
+  return (data as unknown as Booking[]) ?? [];
+}
+
+export async function getBookingsByPropertyId(
+  supabase: BasicSupabaseClient,
+  propertyId: string,
+  filters?: BookingFilter,
+): Promise<Booking[]> {
+  let query = supabase
+    .from(TABLE_NAME)
+    .select(SELECT_QUERY)
+    .eq(QUERY_PROPERTY_ID, propertyId)
+    .order("check_in", { ascending: false });
+
+  if (filters?.from) {
+    query = query.gte("check_in", filters.from);
   }
 
-  const { data, error } = await supabaseQuery;
+  if (filters?.to) {
+    query = query.lte("check_in", filters.to);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(error.message);
@@ -48,14 +68,14 @@ export async function getBookings(
 }
 
 export async function getBookingById(
-  supabase: SupabaseClient,
-  id: string,
+  supabase: BasicSupabaseClient,
+  bookingId: string,
 ): Promise<Booking | null> {
   const { data, error }: PostgrestSingleResponse<Booking | null> =
     await supabase
       .from(TABLE_NAME)
       .select(SELECT_QUERY)
-      .eq(QUERY_ID, id)
+      .eq(QUERY_ID, bookingId)
       .maybeSingle();
 
   if (error) {
@@ -66,17 +86,21 @@ export async function getBookingById(
 }
 
 export async function createBooking(
-  supabase: SupabaseClient,
-  booking: NewBooking,
+  supabase: BasicSupabaseClient,
+  propertyId: string,
+  booking: BookingBody,
+  userId: string,
 ): Promise<Booking> {
-  const bookingToInsert = {
+  const newBooking: NewBooking = {
     ...booking,
+    property_id: propertyId,
+    user_id: userId,
     status: booking.status ?? "pending",
   };
 
   const { data, error }: PostgrestSingleResponse<Booking> = await supabase
     .from(TABLE_NAME)
-    .insert(bookingToInsert)
+    .insert(newBooking)
     .select(SELECT_QUERY)
     .single();
 
@@ -92,15 +116,17 @@ export async function createBooking(
 }
 
 export async function patchBooking(
-  supabase: SupabaseClient,
-  id: string,
-  updates: Partial<NewBooking>,
+  supabase: BasicSupabaseClient,
+  propertyId: string,
+  bookingId: string,
+  updates: Partial<BookingBody>,
 ): Promise<Booking | null> {
   const { data, error }: PostgrestSingleResponse<Booking | null> =
     await supabase
       .from(TABLE_NAME)
       .update(updates)
-      .eq(QUERY_ID, id)
+      .eq(QUERY_ID, bookingId)
+      .eq(QUERY_PROPERTY_ID, propertyId)
       .select(SELECT_QUERY)
       .maybeSingle();
 
@@ -112,15 +138,17 @@ export async function patchBooking(
 }
 
 export async function updateBooking(
-  supabase: SupabaseClient,
-  id: string,
-  booking: NewBooking,
+  supabase: BasicSupabaseClient,
+  propertyId: string,
+  bookingId: string,
+  booking: Partial<BookingBody>,
 ): Promise<Booking | null> {
   const { data, error }: PostgrestSingleResponse<Booking | null> =
     await supabase
       .from(TABLE_NAME)
       .update(booking)
-      .eq(QUERY_ID, id)
+      .eq(QUERY_ID, bookingId)
+      .eq(QUERY_PROPERTY_ID, propertyId)
       .select(SELECT_QUERY)
       .maybeSingle();
 
@@ -132,14 +160,16 @@ export async function updateBooking(
 }
 
 export async function deleteBooking(
-  supabase: SupabaseClient,
-  id: string,
+  supabase: BasicSupabaseClient,
+  propertyId: string,
+  bookingId: string,
 ): Promise<Booking | null> {
   const { data, error }: PostgrestSingleResponse<Booking | null> =
     await supabase
       .from(TABLE_NAME)
       .delete()
-      .eq(QUERY_ID, id)
+      .eq(QUERY_ID, bookingId)
+      .eq(QUERY_PROPERTY_ID, propertyId)
       .select(SELECT_QUERY)
       .maybeSingle();
 
