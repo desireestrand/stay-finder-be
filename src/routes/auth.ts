@@ -64,6 +64,8 @@ auth.post("/logout", requireAuth, async (c) => {
       return c.json({ error: error.message }, 400);
     }
 
+    c.set("user", null);
+
     return c.json({ message: "Logged out" });
   } catch (error) {
     return c.json({ error: "Failed to log out user" }, 400);
