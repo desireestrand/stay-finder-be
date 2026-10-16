@@ -5,8 +5,8 @@ import { HTTPException } from "hono/http-exception";
 import { env } from "./env.js";
 import { optionalAuth } from "./middleware/auth.js";
 import auth from "./routes/auth.js";
-import properties from "./routes/property.js";
-import bookings from "./routes/booking.js";
+import properties from "./routes/properties.js";
+import bookings from "./routes/bookings.js";
 import { prettyJSON } from "hono/pretty-json";
 
 const app = new Hono({ strict: false });
