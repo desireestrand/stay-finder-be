@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import * as db from "../database/property.js";
+import * as db from "../database/properties.js";
 import {
   propertyValidator,
   propertyOptionalValidator,

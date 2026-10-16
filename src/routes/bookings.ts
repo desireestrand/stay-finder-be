@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import * as db from "../database/booking.js";
+import * as db from "../database/bookings.js";
 import {
   bookingValidator,
   bookingOptionalValidator,
