@@ -16,10 +16,10 @@ app.use(prettyJSON());
 app.use(
   "*",
   cors({
-    origin: env.frontendUrl,
+    origin: ["http://localhost:3000", env.frontendUrl],
     credentials: true,
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Authorization", "Content-Type"],
   }),
 );
 
