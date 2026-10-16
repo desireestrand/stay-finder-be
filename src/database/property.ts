@@ -1,7 +1,13 @@
 import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import type { PaginatedListResponse } from "../types/global.js";
 import type { BasicSupabaseClient } from "../types/supabase.js";
-import type { NewProperty, Property, PropertyKind, PropertyListFilter, PropertyValidKey } from "../types/property.js";
+import type {
+  NewProperty,
+  Property,
+  PropertyKind,
+  PropertyListFilter,
+  PropertyValidKey,
+} from "../types/property.js";
 
 const TABLE_NAME = "properties";
 

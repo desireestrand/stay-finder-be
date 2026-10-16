@@ -44,7 +44,7 @@ auth.get("/me", requireAuth, async (c) => {
 auth.post("/logout", requireAuth, async (c) => {
   try {
     const supabase = c.get("supabase");
-    
+
     await dbAuth.signOutUser(supabase);
 
     c.set("user", null);

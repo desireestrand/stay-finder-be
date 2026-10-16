@@ -25,7 +25,9 @@ export type Database = {
   };
 }; */
 
-export type BasicSupabaseClient = ReturnType<typeof createServerClient<Database>>;
+export type BasicSupabaseClient = ReturnType<
+  typeof createServerClient<Database>
+>;
 
 declare module "hono" {
   interface ContextVariableMap {

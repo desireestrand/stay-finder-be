@@ -7,8 +7,12 @@ const bookingQuerySchema = z.object({
   to: z.string().optional(),
 });
 
-export const bookingQueryValidator = zValidator("query", bookingQuerySchema, (result, c) => {
+export const bookingQueryValidator = zValidator(
+  "query",
+  bookingQuerySchema,
+  (result, c) => {
     if (!result.success) {
       return c.json(getValidatorError(result.error), 400);
     }
-});
+  },
+);

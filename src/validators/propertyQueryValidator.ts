@@ -19,11 +19,15 @@ const propertyQuerySchema = z.object({
   sort_by: z
     .enum(["title", "city", "price_per_night", "created_at"])
     .default("created_at"),
-  sort_order: z.enum(["asc", "desc"]).default("desc")
+  sort_order: z.enum(["asc", "desc"]).default("desc"),
 });
 
-export const propertyQueryValidator = zValidator("query", propertyQuerySchema, (result, c) => {
+export const propertyQueryValidator = zValidator(
+  "query",
+  propertyQuerySchema,
+  (result, c) => {
     if (!result.success) {
       return c.json(getValidatorError(result.error), 400);
     }
-});
+  },
+);

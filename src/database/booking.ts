@@ -1,6 +1,12 @@
 import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import type { BasicSupabaseClient } from "../types/supabase.js";
-import type { Booking, BookingFilter, BookingValidKey, BookingBody, NewBooking } from "../types/booking.js";
+import type {
+  Booking,
+  BookingFilter,
+  BookingValidKey,
+  BookingBody,
+  NewBooking,
+} from "../types/booking.js";
 
 const TABLE_NAME = "bookings";
 

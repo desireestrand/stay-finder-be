@@ -4,7 +4,10 @@ import {
   propertyValidator,
   propertyOptionalValidator,
 } from "../validators/propertyValidator.js";
-import { propertyKindParamValidator, propertyParamValidator } from "../validators/propertyParamValidator.js";
+import {
+  propertyKindParamValidator,
+  propertyParamValidator,
+} from "../validators/propertyParamValidator.js";
 import { propertyQueryValidator } from "../validators/propertyQueryValidator.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { User } from "@supabase/supabase-js";
@@ -35,21 +38,26 @@ properties.get("/", propertyQueryValidator, async (c) => {
   }
 });
 
-properties.get("/kind/:kind", propertyKindParamValidator, propertyQueryValidator, async (c) => {
-  try {
-    const supabase = c.get("supabase");
+properties.get(
+  "/kind/:kind",
+  propertyKindParamValidator,
+  propertyQueryValidator,
+  async (c) => {
+    try {
+      const supabase = c.get("supabase");
 
-    const { kind } = c.req.valid("param");
+      const { kind } = c.req.valid("param");
 
-    const filters = c.req.valid("query");
+      const filters = c.req.valid("query");
 
-    const properties = await db.getPropertiesByKind(supabase, kind, filters);
+      const properties = await db.getPropertiesByKind(supabase, kind, filters);
 
-    return c.json(properties);
-  } catch (error) {
-    return c.json({ error: "Failed to fetch properties by kind" }, 500);
-  }
-});
+      return c.json(properties);
+    } catch (error) {
+      return c.json({ error: "Failed to fetch properties by kind" }, 500);
+    }
+  },
+);
 
 properties.get("/:id", propertyParamValidator, async (c) => {
   try {
@@ -79,7 +87,7 @@ properties.post("/", requireAuth, propertyValidator, async (c) => {
 
     const property = await db.createProperty(supabase, {
       ...body,
-      user_id: user.id
+      user_id: user.id,
     });
 
     return c.json(property, 201);
@@ -101,9 +109,13 @@ properties.patch(
 
       const updates: Partial<Property> = c.req.valid("json");
 
-      delete updates.user_id
+      delete updates.user_id;
 
-      const updatedProperty = await db.patchPropertyById(supabase, propertyId, updates);
+      const updatedProperty = await db.patchPropertyById(
+        supabase,
+        propertyId,
+        updates,
+      );
 
       if (!updatedProperty) {
         return c.json({ error: "Property not found" }, 404);
@@ -129,9 +141,13 @@ properties.put(
 
       const body: NewProperty = c.req.valid("json");
 
-      delete body.user_id
+      delete body.user_id;
 
-      const updatedProperty = await db.updatePropertyById(supabase, propertyId, body);
+      const updatedProperty = await db.updatePropertyById(
+        supabase,
+        propertyId,
+        body,
+      );
 
       if (!updatedProperty) {
         return c.json({ error: "Property not found" }, 404);

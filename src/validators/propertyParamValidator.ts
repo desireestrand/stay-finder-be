@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { getValidatorError } from "../utils/validation.js";
 
 const propertyParamSchema = z.object({
-  propertyId: z.uuid("Property id must be a valid UUID")
+  propertyId: z.uuid("Property id must be a valid UUID"),
 });
 
 const propertyKindParamSchema = z.object({
@@ -12,14 +12,22 @@ const propertyKindParamSchema = z.object({
   }),
 });
 
-export const propertyParamValidator = zValidator("param", propertyParamSchema, (result, c) => {
-  if (!result.success) {
-    return c.json(getValidatorError(result.error), 400);
-  }
-});
+export const propertyParamValidator = zValidator(
+  "param",
+  propertyParamSchema,
+  (result, c) => {
+    if (!result.success) {
+      return c.json(getValidatorError(result.error), 400);
+    }
+  },
+);
 
-export const propertyKindParamValidator = zValidator("param", propertyKindParamSchema, (result, c) => {
-  if (!result.success) {
-    return c.json(getValidatorError(result.error), 400);
-  }
-});
+export const propertyKindParamValidator = zValidator(
+  "param",
+  propertyKindParamSchema,
+  (result, c) => {
+    if (!result.success) {
+      return c.json(getValidatorError(result.error), 400);
+    }
+  },
+);

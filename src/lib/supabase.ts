@@ -4,7 +4,7 @@ import type { Database } from "../types/database.types.js";
 
 export const supabase = createClient<Database>(
   env.supabaseUrl,
-  env.supabaseKey
+  env.supabaseKey,
 );
 
 export const supabaseUrl = env.supabaseUrl;
