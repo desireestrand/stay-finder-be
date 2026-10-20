@@ -59,7 +59,7 @@ properties.get(
   },
 );
 
-properties.get("/:id", propertyParamValidator, async (c) => {
+properties.get("/:propertyId", propertyParamValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
 
