@@ -111,6 +111,23 @@ function applyPropertyFilters(
     .range(startIndex, endIndex);
 }
 
+export async function getPropertiesByUserId(
+  supabase: BasicSupabaseClient,
+  userId: string,
+): Promise<Property[]> {
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .select(SELECT_QUERY)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data as unknown as Property[]) ?? [];
+}
+
 export async function getProperties(
   supabase: BasicSupabaseClient,
   filters: PropertyListFilter,

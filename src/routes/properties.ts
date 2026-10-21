@@ -15,6 +15,20 @@ import type { NewProperty, Property } from "../types/property.js";
 
 const properties = new Hono({ strict: false });
 
+properties.get("/me", requireAuth, async (c) => {
+  try {
+    const supabase = c.get("supabase");
+
+    const user = c.get("user") as User;
+
+    const myProperties = await db.getPropertiesByUserId(supabase, user.id);
+
+    return c.json(myProperties, 200);
+  } catch (error) {
+    return c.json({ error: "Failed to fetch your properties" }, 500);
+  }
+});
+
 properties.get("/", propertyQueryValidator, async (c) => {
   const filters = c.req.valid("query");
 
@@ -97,7 +111,7 @@ properties.post("/", requireAuth, propertyValidator, async (c) => {
 });
 
 properties.patch(
-  "/:id",
+  "/:propertyId",
   requireAuth,
   propertyParamValidator,
   propertyOptionalValidator,
@@ -129,7 +143,7 @@ properties.patch(
 );
 
 properties.put(
-  "/:id",
+  "/:propertyId",
   requireAuth,
   propertyParamValidator,
   propertyValidator,
@@ -160,25 +174,30 @@ properties.put(
   },
 );
 
-properties.delete("/:id", requireAuth, propertyParamValidator, async (c) => {
-  try {
-    const supabase = c.get("supabase");
+properties.delete(
+  "/:propertyId",
+  requireAuth,
+  propertyParamValidator,
+  async (c) => {
+    try {
+      const supabase = c.get("supabase");
 
-    const { propertyId } = c.req.valid("param");
+      const { propertyId } = c.req.valid("param");
 
-    const deletedProperty = await db.deletePropertyById(supabase, propertyId);
+      const deletedProperty = await db.deletePropertyById(supabase, propertyId);
 
-    if (!deletedProperty) {
-      return c.json({ error: "Property not found" }, 404);
+      if (!deletedProperty) {
+        return c.json({ error: "Property not found" }, 404);
+      }
+
+      return c.json(
+        { message: "Property deleted", property: deletedProperty },
+        200,
+      );
+    } catch (error) {
+      return c.json({ error: "Failed to delete property" }, 500);
     }
-
-    return c.json(
-      { message: "Property deleted", property: deletedProperty },
-      200,
-    );
-  } catch (error) {
-    return c.json({ error: "Failed to delete property" }, 500);
-  }
-});
+  },
+);
 
 export default properties;
