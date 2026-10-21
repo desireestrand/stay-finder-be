@@ -30,11 +30,55 @@ const SELECT_QUERY = SELECT_QUERY_LIST.join(", ");
 const QUERY_ID = "property_id";
 const QUERY_KIND = "kind";
 
+type PropertyQuery = ReturnType<typeof selectProperties>;
+
 function selectProperties(supabase: BasicSupabaseClient) {
   return supabase.from(TABLE_NAME).select(SELECT_QUERY, { count: "exact" });
 }
 
-function applyPropertyFilters(query: any, filters: PropertyListFilter) {
+async function getBookedPropertyIds(
+  supabase: BasicSupabaseClient,
+  startDate?: string,
+  endDate?: string,
+): Promise<string[]> {
+  if (!startDate || !endDate) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("booking_availability")
+    .select("property_id")
+    .lte("check_in", endDate)
+    .gte("check_out", startDate);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return [
+    ...new Set(
+      (data ?? [])
+        .map((b) => b.property_id)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+}
+
+function applyDateAvailabilityFilter(
+  query: PropertyQuery,
+  bookedPropertyIds: string[],
+) {
+  if (bookedPropertyIds.length > 0) {
+    return query.not("property_id", "in", `(${bookedPropertyIds.join(",")})`);
+  }
+
+  return query;
+}
+
+function applyPropertyFilters(
+  query: PropertyQuery,
+  filters: PropertyListFilter,
+) {
   if (filters.city) {
     query = query.eq("city", filters.city);
   }
@@ -71,7 +115,15 @@ export async function getProperties(
   supabase: BasicSupabaseClient,
   filters: PropertyListFilter,
 ): Promise<PaginatedListResponse<Property>> {
-  const query = selectProperties(supabase);
+  let query = selectProperties(supabase);
+
+  const bookedPropertyIds = await getBookedPropertyIds(
+    supabase,
+    filters.start_date,
+    filters.end_date,
+  );
+
+  query = applyDateAvailabilityFilter(query, bookedPropertyIds);
 
   const filteredQuery = applyPropertyFilters(query, filters);
 
@@ -94,7 +146,15 @@ export async function getPropertiesByKind(
   kind: PropertyKind,
   filters: PropertyListFilter,
 ): Promise<PaginatedListResponse<Property>> {
-  const query = selectProperties(supabase).eq(QUERY_KIND, kind);
+  let query = selectProperties(supabase).eq(QUERY_KIND, kind);
+
+  const bookedPropertyIds = await getBookedPropertyIds(
+    supabase,
+    filters.start_date,
+    filters.end_date,
+  );
+
+  query = applyDateAvailabilityFilter(query, bookedPropertyIds);
 
   const filteredQuery = applyPropertyFilters(query, filters);
 
