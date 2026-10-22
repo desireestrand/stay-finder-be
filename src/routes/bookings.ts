@@ -32,6 +32,7 @@ bookings.get("/me", requireAuth, async (c) => {
 
 bookings.get(
   "/properties/:propertyId",
+  requireAuth,
   propertyParamValidator,
   bookingQueryValidator,
   async (c) => {
@@ -55,13 +56,13 @@ bookings.get(
   },
 );
 
-bookings.get("/:id", requireAuth, bookingParamValidator, async (c) => {
+bookings.get("/:bookingId", requireAuth, bookingParamValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
 
-    const { id } = c.req.valid("param");
+    const { bookingId } = c.req.valid("param");
 
-    const booking = await db.getBookingById(supabase, id);
+    const booking = await db.getBookingById(supabase, bookingId);
 
     if (!booking) {
       return c.json({ error: "Booking not found" }, 404);

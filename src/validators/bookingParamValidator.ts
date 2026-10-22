@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { getValidatorError } from "../utils/validation.js";
 
 const bookingParamSchema = z.object({
-  id: z.uuid("Booking ID must be a valid UUID"),
+  bookingId: z.uuid("Booking ID must be a valid UUID"),
 });
 
 const propertyAndBookingParamSchema = z.object({
