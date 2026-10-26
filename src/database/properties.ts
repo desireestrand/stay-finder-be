@@ -80,7 +80,7 @@ function applyPropertyFilters(
   filters: PropertyListFilter,
 ) {
   if (filters.city) {
-    query = query.eq("city", filters.city);
+    query = query.ilike("city", filters.city);
   }
 
   if (filters.max_guests) {
