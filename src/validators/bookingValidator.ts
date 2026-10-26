@@ -9,7 +9,7 @@ const bookingObject = z.object({
   check_in: z
     .string()
     .min(1, "Check-in date is required")
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Check in date is not valid YYYY-MM-DD"),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Check-in date is not valid YYYY-MM-DD"),
   check_out: z
     .string()
     .min(1, "Check-out date is required")

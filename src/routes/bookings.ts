@@ -82,7 +82,7 @@ bookings.post(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-      const propertyId = c.req.param("propertyId");
+      const { propertyId } = c.req.valid("param");
       const body: BookingBody = c.req.valid("json");
       const user = getAuthUser(c);
 
@@ -117,8 +117,8 @@ bookings.patch(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-      const propertyId = c.req.param("propertyId");
-      const bookingId = c.req.param("bookingId");
+      const { propertyId } = c.req.valid("param");
+      const { bookingId } = c.req.valid("param");
       const updates: Partial<BookingBody> = c.req.valid("json");
 
       if (updates.check_in && updates.check_out) {
@@ -127,7 +127,7 @@ bookings.patch(
         }
       }
 
-      const updatedBooking = await db.patchBooking(
+      const updatedBooking = await db.patchBookingById(
         supabase,
         propertyId,
         bookingId,
@@ -155,15 +155,15 @@ bookings.put(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-      const propertyId = c.req.param("propertyId");
-      const bookingId = c.req.param("bookingId");
+      const { propertyId } = c.req.valid("param");
+      const { bookingId } = c.req.valid("param");
       const body: BookingBody = c.req.valid("json");
 
       if (new Date(body.check_out) <= new Date(body.check_in)) {
         return c.json({ error: "Check-out must be after check-in" }, 400);
       }
 
-      const updatedBooking = await db.updateBooking(
+      const updatedBooking = await db.updateBookingById(
         supabase,
         propertyId,
         bookingId,
@@ -190,10 +190,10 @@ bookings.delete(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-      const propertyId = c.req.param("propertyId");
-      const bookingId = c.req.param("bookingId");
+      const { propertyId } = c.req.valid("param");
+      const { bookingId } = c.req.valid("param");
 
-      const deletedBooking = await db.deleteBooking(
+      const deletedBooking = await db.deleteBookingById(
         supabase,
         propertyId,
         bookingId,

@@ -121,7 +121,7 @@ export async function createBooking(
   return data;
 }
 
-export async function patchBooking(
+export async function patchBookingById(
   supabase: BasicSupabaseClient,
   propertyId: string,
   bookingId: string,
@@ -143,7 +143,7 @@ export async function patchBooking(
   return data;
 }
 
-export async function updateBooking(
+export async function updateBookingById(
   supabase: BasicSupabaseClient,
   propertyId: string,
   bookingId: string,
@@ -165,7 +165,7 @@ export async function updateBooking(
   return data;
 }
 
-export async function deleteBooking(
+export async function deleteBookingById(
   supabase: BasicSupabaseClient,
   propertyId: string,
   bookingId: string,
