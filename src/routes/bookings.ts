@@ -11,7 +11,8 @@ import {
 } from "../validators/bookingParamValidator.js";
 import { bookingQueryValidator } from "../validators/bookingQueryValidator.js";
 import { requireAuth, getAuthUser } from "../middleware/auth.js";
-import type { BookingBody, NewBooking } from "../types/booking.js";
+import type { BookingBody } from "../types/booking.js";
+import { AppError } from "../utils/error.js";
 
 const bookings = new Hono({ strict: false });
 
@@ -24,6 +25,13 @@ bookings.get("/me", requireAuth, async (c) => {
 
     return c.json(myBookings, 200);
   } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+      return c.json({ error: error.message }, error.statusCode as any);
+    }
+
+    console.error("Unexpected error in GET /bookings/me:", error);
+
     const message =
       error instanceof Error ? error.message : "Failed to fetch your bookings";
     return c.json({ error: message }, 500);
@@ -41,14 +49,24 @@ bookings.get(
       const { propertyId } = c.req.valid("param");
       const query = c.req.valid("query");
 
-      const bookings = await db.getBookingsByPropertyId(
+      const propertyBookings = await db.getBookingsByPropertyId(
         supabase,
         propertyId,
         query,
       );
 
-      return c.json(bookings);
+      return c.json(propertyBookings);
     } catch (error) {
+      if (error instanceof AppError) {
+        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+        return c.json({ error: error.message }, error.statusCode as any);
+      }
+
+      console.error(
+        "Unexpected error in GET /bookings/properties/:propertyId:",
+        error,
+      );
+
       const message =
         error instanceof Error ? error.message : "Failed to fetch bookings";
       return c.json({ error: message }, 500);
@@ -68,6 +86,13 @@ bookings.get("/:bookingId", requireAuth, bookingParamValidator, async (c) => {
 
     return c.json(booking);
   } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+      return c.json({ error: error.message }, error.statusCode as any);
+    }
+
+    console.error("Unexpected error in GET /bookings/:bookingId:", error);
+
     const message =
       error instanceof Error ? error.message : "Failed to fetch booking";
     return c.json({ error: message }, 500);
@@ -86,10 +111,6 @@ bookings.post(
       const body: BookingBody = c.req.valid("json");
       const user = getAuthUser(c);
 
-      if (new Date(body.check_out) <= new Date(body.check_in)) {
-        return c.json({ error: "Check-out must be after check-in" }, 400);
-      }
-
       const booking = await db.createBooking(
         supabase,
         propertyId,
@@ -102,6 +123,16 @@ bookings.post(
 
       return c.json(booking, 201);
     } catch (error) {
+      if (error instanceof AppError) {
+        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+        return c.json({ error: error.message }, error.statusCode as any);
+      }
+
+      console.error(
+        "Unexpected error in POST /bookings/properties/:propertyId:",
+        error,
+      );
+
       const message =
         error instanceof Error ? error.message : "Failed to create booking";
       return c.json({ error: message }, 400);
@@ -121,12 +152,6 @@ bookings.patch(
       const { bookingId } = c.req.valid("param");
       const updates: Partial<BookingBody> = c.req.valid("json");
 
-      if (updates.check_in && updates.check_out) {
-        if (new Date(updates.check_out) <= new Date(updates.check_in)) {
-          return c.json({ error: "Check-out must be after check-in" }, 400);
-        }
-      }
-
       const updatedBooking = await db.patchBookingById(
         supabase,
         propertyId,
@@ -140,6 +165,16 @@ bookings.patch(
 
       return c.json(updatedBooking);
     } catch (error) {
+      if (error instanceof AppError) {
+        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+        return c.json({ error: error.message }, error.statusCode as any);
+      }
+
+      console.error(
+        "Unexpected error in PATCH /bookings/properties/:propertyId/:bookingId:",
+        error,
+      );
+
       const message =
         error instanceof Error ? error.message : "Failed to update booking";
       return c.json({ error: message }, 400);
@@ -159,10 +194,6 @@ bookings.put(
       const { bookingId } = c.req.valid("param");
       const body: BookingBody = c.req.valid("json");
 
-      if (new Date(body.check_out) <= new Date(body.check_in)) {
-        return c.json({ error: "Check-out must be after check-in" }, 400);
-      }
-
       const updatedBooking = await db.updateBookingById(
         supabase,
         propertyId,
@@ -176,6 +207,16 @@ bookings.put(
 
       return c.json(updatedBooking);
     } catch (error) {
+      if (error instanceof AppError) {
+        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+        return c.json({ error: error.message }, error.statusCode as any);
+      }
+
+      console.error(
+        "Unexpected error in PUT /bookings/properties/:propertyId/:bookingId:",
+        error,
+      );
+
       const message =
         error instanceof Error ? error.message : "Failed to update booking";
       return c.json({ error: message }, 400);
@@ -208,6 +249,16 @@ bookings.delete(
         200,
       );
     } catch (error) {
+      if (error instanceof AppError) {
+        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+        return c.json({ error: error.message }, error.statusCode as any);
+      }
+
+      console.error(
+        "Unexpected error in DELETE /bookings/properties/:propertyId/:bookingId:",
+        error,
+      );
+
       const message =
         error instanceof Error ? error.message : "Failed to delete booking";
       return c.json({ error: message }, 500);

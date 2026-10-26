@@ -1,5 +1,5 @@
-import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import type { BasicSupabaseClient } from "../types/supabase.js";
+import { badRequest, conflict, forbidden, AppError } from "../utils/error.js";
 
 export async function signUpUser(
   supabase: BasicSupabaseClient,
@@ -12,7 +12,7 @@ export async function signUpUser(
   });
 
   if (error) {
-    throw new Error(error.message);
+    throw badRequest(error.message, "SIGNUP_FAILED");
   }
 
   return data;
@@ -29,7 +29,7 @@ export async function signInUser(
   });
 
   if (error) {
-    throw new Error("Invalid credentials");
+    throw new AppError(401, "INVALID_CREDENTIALS", "Invalid credentials");
   }
 
   return data;
@@ -39,6 +39,6 @@ export async function signOutUser(supabase: BasicSupabaseClient) {
   const { error } = await supabase.auth.signOut();
 
   if (error) {
-    throw new Error(error.message);
+    throw badRequest(error.message, "SIGNOUT_FAILED");
   }
 }

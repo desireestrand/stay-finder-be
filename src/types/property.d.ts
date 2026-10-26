@@ -6,12 +6,12 @@ export type Property = Database["public"]["Tables"]["properties"]["Row"];
 
 export type PropertyInsert = Database["public"]["Tables"]["properties"]["Insert"];
 
-export type NewProperty = Omit<
-  PropertyInsert,
-  "user_id" | "property_id" | "created_at"
-> & {
-  user_id?: string | null;
-};
+export type PropertyBody = Omit<
+  Database["public"]["Tables"]["properties"]["Insert"],
+  "property_id" | "user_id" | "created_at"
+>;
+
+export type NewProperty = Database["public"]["Tables"]["properties"]["Insert"];
 
 export type PropertyValidKey = keyof Property;
 

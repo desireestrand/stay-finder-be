@@ -38,7 +38,7 @@ function createSupabaseForRequest(c: Context): BasicSupabaseClient {
 }
 
 async function setSupabaseContext(c: Context): Promise<void> {
-  const existingClient = c.get("supabase") as BasicSupabaseClient | undefined;
+  const existingClient = c.get("supabase");
 
   if (existingClient) {
     return;
@@ -46,7 +46,7 @@ async function setSupabaseContext(c: Context): Promise<void> {
 
   const supabase = createSupabaseForRequest(c);
 
-  c.set("supabase", supabase as BasicSupabaseClient);
+  c.set("supabase", supabase);
 
   const {
     data: { user },

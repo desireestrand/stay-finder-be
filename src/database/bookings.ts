@@ -7,23 +7,11 @@ import type {
   BookingBody,
   NewBooking,
 } from "../types/booking.js";
+import { mapDbError } from "../utils/error.js";
 
 const TABLE_NAME = "bookings";
 
-const SELECT_QUERY_LIST: BookingValidKey[] = [
-  "booking_id",
-  "property_id",
-  "user_id",
-  "guest_name",
-  "guest_email",
-  "check_in",
-  "check_out",
-  "guests",
-  "status",
-  "created_at",
-];
-
-const SELECT_QUERY = SELECT_QUERY_LIST.join(", ");
+const SELECT_QUERY = "booking_id, property_id, user_id, guest_name, guest_email, check_in, check_out, guests, status, created_at";
 
 const QUERY_ID = "booking_id";
 const QUERY_PROPERTY_ID = "property_id";
@@ -39,10 +27,10 @@ export async function getBookingsByUserId(
     .order("check_in", { ascending: true });
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
-  return (data as unknown as Booking[]) ?? [];
+  return data ?? [];
 }
 
 export async function getBookingsByPropertyId(
@@ -67,10 +55,10 @@ export async function getBookingsByPropertyId(
   const { data, error } = await query;
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
-  return (data as unknown as Booking[]) ?? [];
+  return data ?? [];
 }
 
 export async function getBookingById(
@@ -85,7 +73,7 @@ export async function getBookingById(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;
@@ -111,11 +99,11 @@ export async function createBooking(
     .single();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   if (!data) {
-    throw new Error("Booking could not be created");
+    throw new Error("Booking could not be created.");
   }
 
   return data;
@@ -137,7 +125,7 @@ export async function patchBookingById(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;
@@ -159,7 +147,7 @@ export async function updateBookingById(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;
@@ -180,7 +168,7 @@ export async function deleteBookingById(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;

@@ -10,7 +10,8 @@ import {
 } from "../validators/propertyParamValidator.js";
 import { propertyQueryValidator } from "../validators/propertyQueryValidator.js";
 import { requireAuth, getAuthUser } from "../middleware/auth.js";
-import type { NewProperty, Property } from "../types/property.js";
+import type { NewProperty, PropertyBody } from "../types/property.js";
+import { AppError } from "../utils/error.js";
 
 const properties = new Hono({ strict: false });
 
@@ -23,6 +24,13 @@ properties.get("/me", requireAuth, async (c) => {
 
     return c.json(myProperties, 200);
   } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+      return c.json({ error: error.message }, error.statusCode as any);
+    }
+
+    console.error("Unexpected error in GET /properties/me:", error);
+
     const message =
       error instanceof Error
         ? error.message
@@ -37,10 +45,17 @@ properties.get("/", propertyQueryValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
 
-    const properties = await db.getProperties(supabase, filters);
+    const fetchedProperties = await db.getProperties(supabase, filters);
 
-    return c.json(properties);
+    return c.json(fetchedProperties);
   } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+      return c.json({ error: error.message }, error.statusCode as any);
+    }
+
+    console.error("Unexpected error in GET /properties:", error);
+
     const message =
       error instanceof Error ? error.message : "Failed to fetch properties";
     return c.json(
@@ -66,10 +81,21 @@ properties.get(
       const { kind } = c.req.valid("param");
       const filters = c.req.valid("query");
 
-      const properties = await db.getPropertiesByKind(supabase, kind, filters);
+      const fetchedProperties = await db.getPropertiesByKind(
+        supabase,
+        kind,
+        filters,
+      );
 
-      return c.json(properties);
+      return c.json(fetchedProperties);
     } catch (error) {
+      if (error instanceof AppError) {
+        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+        return c.json({ error: error.message }, error.statusCode as any);
+      }
+
+      console.error("Unexpected error in GET /properties/kind/:kind:", error);
+
       const message =
         error instanceof Error
           ? error.message
@@ -92,6 +118,13 @@ properties.get("/:propertyId", propertyParamValidator, async (c) => {
 
     return c.json(property);
   } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+      return c.json({ error: error.message }, error.statusCode as any);
+    }
+
+    console.error("Unexpected error in GET /properties/:propertyId:", error);
+
     const message =
       error instanceof Error ? error.message : "Failed to fetch property";
     return c.json({ error: message }, 500);
@@ -101,7 +134,7 @@ properties.get("/:propertyId", propertyParamValidator, async (c) => {
 properties.post("/", requireAuth, propertyValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
-    const body: NewProperty = c.req.valid("json");
+    const body: PropertyBody = c.req.valid("json");
     const user = getAuthUser(c);
 
     const property = await db.createProperty(supabase, {
@@ -111,6 +144,13 @@ properties.post("/", requireAuth, propertyValidator, async (c) => {
 
     return c.json(property, 201);
   } catch (error) {
+    if (error instanceof AppError) {
+      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+      return c.json({ error: error.message }, error.statusCode as any);
+    }
+
+    console.error("Unexpected error in POST /properties:", error);
+
     const message =
       error instanceof Error ? error.message : "Failed to create property";
     return c.json({ error: message }, 400);
@@ -126,9 +166,7 @@ properties.patch(
     try {
       const supabase = c.get("supabase");
       const { propertyId } = c.req.valid("param");
-      const updates: Partial<NewProperty> = c.req.valid("json");
-
-      delete updates.user_id;
+      const updates: Partial<PropertyBody> = c.req.valid("json");
 
       const updatedProperty = await db.patchPropertyById(
         supabase,
@@ -142,6 +180,16 @@ properties.patch(
 
       return c.json(updatedProperty);
     } catch (error) {
+      if (error instanceof AppError) {
+        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+        return c.json({ error: error.message }, error.statusCode as any);
+      }
+
+      console.error(
+        "Unexpected error in PATCH /properties/:propertyId:",
+        error,
+      );
+
       const message =
         error instanceof Error ? error.message : "Failed to update property";
       return c.json({ error: message }, 400);
@@ -158,14 +206,16 @@ properties.put(
     try {
       const supabase = c.get("supabase");
       const { propertyId } = c.req.valid("param");
-      const body: NewProperty = c.req.valid("json");
-
-      delete body.user_id;
+      const body: PropertyBody = c.req.valid("json");
+      const user = getAuthUser(c);
 
       const updatedProperty = await db.updatePropertyById(
         supabase,
         propertyId,
-        body,
+        {
+          ...body,
+          user_id: user.id,
+        },
       );
 
       if (!updatedProperty) {
@@ -174,6 +224,13 @@ properties.put(
 
       return c.json(updatedProperty);
     } catch (error) {
+      if (error instanceof AppError) {
+        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+        return c.json({ error: error.message }, error.statusCode as any);
+      }
+
+      console.error("Unexpected error in PUT /properties/:propertyId:", error);
+
       const message =
         error instanceof Error ? error.message : "Failed to update property";
       return c.json({ error: message }, 400);
@@ -201,6 +258,16 @@ properties.delete(
         200,
       );
     } catch (error) {
+      if (error instanceof AppError) {
+        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
+        return c.json({ error: error.message }, error.statusCode as any);
+      }
+
+      console.error(
+        "Unexpected error in DELETE /properties/:propertyId:",
+        error,
+      );
+
       const message =
         error instanceof Error ? error.message : "Failed to delete property";
       return c.json({ error: message }, 500);
