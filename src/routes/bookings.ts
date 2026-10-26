@@ -19,14 +19,15 @@ const bookings = new Hono({ strict: false });
 bookings.get("/me", requireAuth, async (c) => {
   try {
     const supabase = c.get("supabase");
-
     const user = c.get("user") as User;
 
     const myBookings = await db.getBookingsByUserId(supabase, user.id);
-
+    
     return c.json(myBookings, 200);
   } catch (error) {
-    return c.json({ error: "Failed to fetch your bookings" }, 500);
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch your bookings";
+    return c.json({ error: message }, 500);
   }
 });
 
@@ -38,9 +39,7 @@ bookings.get(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { propertyId } = c.req.valid("param");
-
       const query = c.req.valid("query");
 
       const bookings = await db.getBookingsByPropertyId(
@@ -51,7 +50,9 @@ bookings.get(
 
       return c.json(bookings);
     } catch (error) {
-      return c.json({ error: "Failed to fetch bookings" }, 500);
+      const message =
+        error instanceof Error ? error.message : "Failed to fetch bookings";
+      return c.json({ error: message }, 500);
     }
   },
 );
@@ -59,9 +60,7 @@ bookings.get(
 bookings.get("/:bookingId", requireAuth, bookingParamValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
-
     const { bookingId } = c.req.valid("param");
-
     const booking = await db.getBookingById(supabase, bookingId);
 
     if (!booking) {
@@ -70,7 +69,9 @@ bookings.get("/:bookingId", requireAuth, bookingParamValidator, async (c) => {
 
     return c.json(booking);
   } catch (error) {
-    return c.json({ error: "Failed to fetch booking" }, 500);
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch booking";
+    return c.json({ error: message }, 500);
   }
 });
 
@@ -82,11 +83,8 @@ bookings.post(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const propertyId = c.req.param("propertyId");
-
       const body: BookingBody = c.req.valid("json");
-
       const user = c.get("user") as User;
 
       if (new Date(body.check_out) <= new Date(body.check_in)) {
@@ -105,7 +103,9 @@ bookings.post(
 
       return c.json(booking, 201);
     } catch (error) {
-      return c.json({ error: "Failed to create booking" }, 400);
+      const message =
+        error instanceof Error ? error.message : "Failed to create booking";
+      return c.json({ error: message }, 400);
     }
   },
 );
@@ -141,7 +141,9 @@ bookings.patch(
 
       return c.json(updatedBooking);
     } catch (error) {
-      return c.json({ error: "Failed to update booking" }, 400);
+      const message =
+        error instanceof Error ? error.message : "Failed to update booking";
+      return c.json({ error: message }, 400);
     }
   },
 );
@@ -154,11 +156,8 @@ bookings.put(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const propertyId = c.req.param("propertyId");
-
       const bookingId = c.req.param("bookingId");
-
       const body: NewBooking = c.req.valid("json");
 
       if (new Date(body.check_out) <= new Date(body.check_in)) {
@@ -178,7 +177,9 @@ bookings.put(
 
       return c.json(updatedBooking);
     } catch (error) {
-      return c.json({ error: "Failed to update booking" }, 400);
+      const message =
+        error instanceof Error ? error.message : "Failed to update booking";
+      return c.json({ error: message }, 400);
     }
   },
 );
@@ -190,9 +191,7 @@ bookings.delete(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const propertyId = c.req.param("propertyId");
-
       const bookingId = c.req.param("bookingId");
 
       const deletedBooking = await db.deleteBooking(
@@ -210,7 +209,9 @@ bookings.delete(
         200,
       );
     } catch (error) {
-      return c.json({ error: "Failed to delete booking" }, 500);
+      const message =
+        error instanceof Error ? error.message : "Failed to delete booking";
+      return c.json({ error: message }, 500);
     }
   },
 );

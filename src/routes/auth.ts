@@ -14,7 +14,9 @@ auth.post("/register", authValidator, async (c) => {
 
     return c.json({ user: data.user }, 201);
   } catch (error) {
-    return c.json({ error: "Failed to register user" }, 400);
+    const message =
+      error instanceof Error ? error.message : "Failed to register user";
+    return c.json({ error: message }, 400);
   }
 });
 
@@ -27,7 +29,9 @@ auth.post("/login", authValidator, async (c) => {
 
     return c.json({ user: data.user }, 200);
   } catch (error) {
-    return c.json({ error: "Failed to log in user" }, 400);
+    const message =
+      error instanceof Error ? error.message : "Failed to log in user";
+    return c.json({ error: message }, 400);
   }
 });
 
@@ -37,7 +41,9 @@ auth.get("/me", requireAuth, async (c) => {
 
     return c.json({ user });
   } catch (error) {
-    return c.json({ error: "Failed to fetch user" }, 500);
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch user";
+    return c.json({ error: message }, 500);
   }
 });
 
@@ -51,7 +57,9 @@ auth.post("/logout", requireAuth, async (c) => {
 
     return c.json({ message: "Logged out" });
   } catch (error) {
-    return c.json({ error: "Failed to log out user" }, 400);
+    const message =
+      error instanceof Error ? error.message : "Failed to log out user";
+    return c.json({ error: message }, 400);
   }
 });
 

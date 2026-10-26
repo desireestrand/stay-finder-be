@@ -18,14 +18,17 @@ const properties = new Hono({ strict: false });
 properties.get("/me", requireAuth, async (c) => {
   try {
     const supabase = c.get("supabase");
-
     const user = c.get("user") as User;
 
     const myProperties = await db.getPropertiesByUserId(supabase, user.id);
 
     return c.json(myProperties, 200);
   } catch (error) {
-    return c.json({ error: "Failed to fetch your properties" }, 500);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch your properties";
+    return c.json({ error: message }, 500);
   }
 });
 
@@ -39,13 +42,15 @@ properties.get("/", propertyQueryValidator, async (c) => {
 
     return c.json(properties);
   } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch properties";
     return c.json(
       {
         data: [],
         count: 0,
         offset: filters.offset,
         limit: filters.limit,
-        error: "Failed to fetch properties",
+        error: message,
       },
       500,
     );
@@ -59,16 +64,18 @@ properties.get(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { kind } = c.req.valid("param");
-
       const filters = c.req.valid("query");
 
       const properties = await db.getPropertiesByKind(supabase, kind, filters);
 
       return c.json(properties);
     } catch (error) {
-      return c.json({ error: "Failed to fetch properties by kind" }, 500);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch properties by kind";
+      return c.json({ error: message }, 500);
     }
   },
 );
@@ -76,7 +83,6 @@ properties.get(
 properties.get("/:propertyId", propertyParamValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
-
     const { propertyId } = c.req.valid("param");
 
     const property = await db.getPropertyById(supabase, propertyId);
@@ -87,16 +93,16 @@ properties.get("/:propertyId", propertyParamValidator, async (c) => {
 
     return c.json(property);
   } catch (error) {
-    return c.json({ error: "Failed to fetch property" }, 500);
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch property";
+    return c.json({ error: message }, 500);
   }
 });
 
 properties.post("/", requireAuth, propertyValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
-
     const body: NewProperty = c.req.valid("json");
-
     const user = c.get("user") as User;
 
     const property = await db.createProperty(supabase, {
@@ -106,7 +112,9 @@ properties.post("/", requireAuth, propertyValidator, async (c) => {
 
     return c.json(property, 201);
   } catch (error) {
-    return c.json({ error: "Failed to create property" }, 400);
+    const message =
+      error instanceof Error ? error.message : "Failed to create property";
+    return c.json({ error: message }, 400);
   }
 });
 
@@ -118,9 +126,7 @@ properties.patch(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { propertyId } = c.req.valid("param");
-
       const updates: Partial<Property> = c.req.valid("json");
 
       delete updates.user_id;
@@ -137,7 +143,9 @@ properties.patch(
 
       return c.json(updatedProperty);
     } catch (error) {
-      return c.json({ error: "Failed to update property" }, 400);
+      const message =
+        error instanceof Error ? error.message : "Failed to update property";
+      return c.json({ error: message }, 400);
     }
   },
 );
@@ -150,9 +158,7 @@ properties.put(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { propertyId } = c.req.valid("param");
-
       const body: NewProperty = c.req.valid("json");
 
       delete body.user_id;
@@ -169,7 +175,9 @@ properties.put(
 
       return c.json(updatedProperty);
     } catch (error) {
-      return c.json({ error: "Failed to update property" }, 400);
+      const message =
+        error instanceof Error ? error.message : "Failed to update property";
+      return c.json({ error: message }, 400);
     }
   },
 );
@@ -181,7 +189,6 @@ properties.delete(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { propertyId } = c.req.valid("param");
 
       const deletedProperty = await db.deletePropertyById(supabase, propertyId);
@@ -195,7 +202,9 @@ properties.delete(
         200,
       );
     } catch (error) {
-      return c.json({ error: "Failed to delete property" }, 500);
+      const message =
+        error instanceof Error ? error.message : "Failed to delete property";
+      return c.json({ error: message }, 500);
     }
   },
 );
