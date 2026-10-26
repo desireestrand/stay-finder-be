@@ -4,7 +4,7 @@ export type BookingStatus = "pending" | "confirmed" | "cancelled";
 
 export type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 
-type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
+export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
 
 export type NewBooking = Omit<BookingInsert, "booking_id" | "created_at"> & {
   property_id?: string;
@@ -12,7 +12,7 @@ export type NewBooking = Omit<BookingInsert, "booking_id" | "created_at"> & {
   status?: BookingStatus;
 };
 
-type BookingBody = Omit<NewBooking, "property_id" | "user_id">;
+export type BookingBody = Omit<NewBooking, "property_id" | "user_id">;
 
 export type BookingValidKey = keyof Booking;
 
