@@ -48,8 +48,8 @@ async function getBookedPropertyIds(
   const { data, error } = await supabase
     .from("booking_availability")
     .select("property_id")
-    .lte("check_in", endDate)
-    .gte("check_out", startDate);
+    .lt("check_in", endDate)
+    .gt("check_out", startDate);
 
   if (error) {
     throw new Error(error.message);
