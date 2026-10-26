@@ -34,6 +34,7 @@ const bookingSchema = bookingObject.refine(
 );
 
 const bookingOptionalSchema = bookingObject
+  .omit({ property_id: true })
   .partial()
   .refine(
     (data) =>
