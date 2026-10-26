@@ -9,8 +9,7 @@ import {
   propertyParamValidator,
 } from "../validators/propertyParamValidator.js";
 import { propertyQueryValidator } from "../validators/propertyQueryValidator.js";
-import { requireAuth } from "../middleware/auth.js";
-import type { User } from "@supabase/supabase-js";
+import { requireAuth, getAuthUser } from "../middleware/auth.js";
 import type { NewProperty, Property } from "../types/property.js";
 
 const properties = new Hono({ strict: false });
@@ -18,7 +17,7 @@ const properties = new Hono({ strict: false });
 properties.get("/me", requireAuth, async (c) => {
   try {
     const supabase = c.get("supabase");
-    const user = c.get("user") as User;
+    const user = getAuthUser(c);
 
     const myProperties = await db.getPropertiesByUserId(supabase, user.id);
 
@@ -103,7 +102,7 @@ properties.post("/", requireAuth, propertyValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
     const body: NewProperty = c.req.valid("json");
-    const user = c.get("user") as User;
+    const user = getAuthUser(c);
 
     const property = await db.createProperty(supabase, {
       ...body,

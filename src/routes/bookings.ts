@@ -10,8 +10,7 @@ import {
   propertyAndBookingParamValidator,
 } from "../validators/bookingParamValidator.js";
 import { bookingQueryValidator } from "../validators/bookingQueryValidator.js";
-import { requireAuth } from "../middleware/auth.js";
-import type { User } from "@supabase/supabase-js";
+import { requireAuth, getAuthUser } from "../middleware/auth.js";
 import type { BookingBody, NewBooking } from "../types/booking.js";
 
 const bookings = new Hono({ strict: false });
@@ -19,10 +18,10 @@ const bookings = new Hono({ strict: false });
 bookings.get("/me", requireAuth, async (c) => {
   try {
     const supabase = c.get("supabase");
-    const user = c.get("user") as User;
+    const user = getAuthUser(c);
 
     const myBookings = await db.getBookingsByUserId(supabase, user.id);
-    
+
     return c.json(myBookings, 200);
   } catch (error) {
     const message =
@@ -85,7 +84,7 @@ bookings.post(
       const supabase = c.get("supabase");
       const propertyId = c.req.param("propertyId");
       const body: BookingBody = c.req.valid("json");
-      const user = c.get("user") as User;
+      const user = getAuthUser(c);
 
       if (new Date(body.check_out) <= new Date(body.check_in)) {
         return c.json({ error: "Check-out must be after check-in" }, 400);

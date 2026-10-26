@@ -6,6 +6,7 @@ import { env } from "../env.js";
 import { supabaseKey, supabaseUrl } from "../lib/supabase.js";
 import type { BasicSupabaseClient } from "../types/supabase.js";
 import type { Database } from "../types/database.types.js";
+import type { User } from "@supabase/supabase-js";
 
 function createSupabaseForRequest(c: Context): BasicSupabaseClient {
   return createServerClient<Database>(supabaseUrl, supabaseKey, {
@@ -77,4 +78,12 @@ export async function requireAuth(c: Context, next: Next) {
   }
 
   await next();
+}
+
+export function getAuthUser(c: Context): User {
+  const user = c.get("user");
+  if (!user) {
+    throw new HTTPException(401, { message: "Unauthorized" });
+  }
+  return user;
 }
