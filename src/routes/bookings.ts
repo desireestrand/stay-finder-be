@@ -157,7 +157,7 @@ bookings.put(
       const supabase = c.get("supabase");
       const propertyId = c.req.param("propertyId");
       const bookingId = c.req.param("bookingId");
-      const body: NewBooking = c.req.valid("json");
+      const body: BookingBody = c.req.valid("json");
 
       if (new Date(body.check_out) <= new Date(body.check_in)) {
         return c.json({ error: "Check-out must be after check-in" }, 400);

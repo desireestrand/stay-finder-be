@@ -126,7 +126,7 @@ properties.patch(
     try {
       const supabase = c.get("supabase");
       const { propertyId } = c.req.valid("param");
-      const updates: Partial<Property> = c.req.valid("json");
+      const updates: Partial<NewProperty> = c.req.valid("json");
 
       delete updates.user_id;
 
