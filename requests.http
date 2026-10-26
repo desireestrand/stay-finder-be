@@ -1,3 +1,39 @@
+@supabaseUrl = https://ivigodambfrohoncepou.supabase.co
+@key = sb_publishable_RTwWiKfGtwqpqCBKJCLRhQ_BJTytxIL
+
+### RLS-test 1: Anonym läsning av properties ska FUNGERA (select-policy: using true)
+GET {{supabaseUrl}}/rest/v1/properties?select=property_id,title
+apikey: {{key}}
+Authorization: Bearer {{key}}
+
+### RLS-test 2: Anonym läsning av bookings ska ge TOM lista [] (policyn kräver authenticated)
+GET {{supabaseUrl}}/rest/v1/bookings?select=*
+apikey: {{key}}
+Authorization: Bearer {{key}}
+
+### RLS-test 3: Anonym INSERT ska NEKAS (401/403, felkod 42501)
+POST {{supabaseUrl}}/rest/v1/properties
+apikey: {{key}}
+Authorization: Bearer {{key}}
+Content-Type: application/json
+
+{
+  "user_id": "5db14e43-c106-46c3-aaae-d0aed5bcc056",
+  "title": "Hackat boende",
+  "description": "Ska inte gå",
+  "city": "Test",
+  "country": "Sweden",
+  "price_per_night": 100,
+  "max_guests": 1,
+  "kind": "cabin"
+}
+
+### RLS-test 4: Anonym DELETE ska inte radera något (tom lista tillbaka, eller nekas)
+DELETE {{supabaseUrl}}/rest/v1/properties?property_id=eq.a0ee6254-8c87-4318-b21a-e53b49734001
+apikey: {{key}}
+Authorization: Bearer {{key}}
+Prefer: return=representation
+
 ### Root
 GET http://localhost:3000/
 
