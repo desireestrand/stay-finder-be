@@ -24,12 +24,12 @@ const bookingObject = z.object({
 });
 
 const dateOrder = {
-  message: "Check in can not be later than check out",
+  message: "Check-out must be after check-in",
   path: ["check_in"],
 };
 
 const bookingSchema = bookingObject.refine(
-  (data) => data.check_in <= data.check_out,
+  (data) => data.check_in < data.check_out,
   dateOrder,
 );
 
@@ -38,7 +38,7 @@ const bookingOptionalSchema = bookingObject
   .partial()
   .refine(
     (data) =>
-      !data.check_in || !data.check_out || data.check_in <= data.check_out,
+      !data.check_in || !data.check_out || data.check_in < data.check_out,
     dateOrder,
   );
 
