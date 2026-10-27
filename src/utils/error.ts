@@ -44,6 +44,32 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
 
 export function mapDbError(error: PostgrestError): AppError {
   switch (error.code) {
+    case "P0001": {
+      const hint = error.hint;
+
+      switch (hint) {
+        case "CAPACITY_EXCEEDED":
+          return badRequest(
+            error.message ||
+              "Number of guests exceeds the maximum capacity of the property",
+            "CAPACITY_EXCEEDED",
+          );
+        case "PAST_CHECKIN_NOT_ALLOWED":
+        case "PAST_BOOKING_MODIFICATION_NOT_ALLOWED":
+          return badRequest(
+            error.message || "This action is not allowed for past dates",
+            "PAST_BOOKING_NOT_ALLOWED",
+          );
+        case "PROPERTY_NOT_FOUND":
+          return notFound("Property", "PROPERTY_NOT_FOUND");
+        default:
+          return badRequest(
+            error.message || "A business rule violation occurred",
+            "BUSINESS_RULE_VIOLATION",
+          );
+      }
+    }
+
     case "23P01":
       return conflict(
         "The property is already booked for the selected dates",

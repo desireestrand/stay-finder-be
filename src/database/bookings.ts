@@ -5,12 +5,13 @@ import type {
   BookingFilter,
   BookingBody,
   NewBooking,
+  BookingInsert,
 } from "../types/booking.js";
 import { mapDbError } from "../utils/error.js";
 
 const TABLE_NAME = "bookings";
 
-const SELECT_QUERY = "booking_id, property_id, user_id, guest_name, guest_email, check_in, check_out, guests, status, created_at";
+const SELECT_QUERY = "booking_id, property_id, user_id, guest_name, guest_email, check_in, check_out, guests, total_price, status, created_at";
 
 const QUERY_ID = "booking_id";
 const QUERY_PROPERTY_ID = "property_id";
@@ -84,11 +85,12 @@ export async function createBooking(
   booking: BookingBody,
   userId: string,
 ): Promise<Booking> {
-  const newBooking: NewBooking = {
+  const newBooking: BookingInsert = {
     ...booking,
     property_id: propertyId,
     user_id: userId,
     status: booking.status ?? "pending",
+    total_price: 0
   };
 
   const { data, error }: PostgrestSingleResponse<Booking> = await supabase
