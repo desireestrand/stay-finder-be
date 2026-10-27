@@ -207,7 +207,7 @@ export async function createProperty(
   }
 
   if (!data) {
-    throw new Error("Property could not be created.");
+    throw new Error("Property could not be created");
   }
 
   return data;

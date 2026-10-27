@@ -102,7 +102,7 @@ export async function createBooking(
   }
 
   if (!data) {
-    throw new Error("Booking could not be created.");
+    throw new Error("Booking could not be created");
   }
 
   return data;

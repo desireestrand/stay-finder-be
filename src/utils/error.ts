@@ -35,6 +35,11 @@ function readConstraintName(message: string): string | null {
 
 const CONSTRAINT_MESSAGES: Record<string, string> = {
   check_out_after_check_in: "Check-out must be after check-in",
+  bookings_guests_check: "Guests must be greater than 0",
+  bookings_status_check:
+    'Invalid status. Must be one of: "pending", "confirmed", "cancelled".',
+  properties_price_per_night_check: "Price must be greater than 0",
+  properties_max_guests_check: "Max guests must be greater than 0",
 };
 
 export function mapDbError(error: PostgrestError): AppError {
