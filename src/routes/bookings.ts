@@ -12,7 +12,7 @@ import {
 import { bookingQueryValidator } from "../validators/bookingQueryValidator.js";
 import { requireAuth, getAuthUser } from "../middleware/auth.js";
 import type { BookingBody } from "../types/booking.js";
-import { AppError } from "../utils/error.js";
+import { handleRouteError } from "../utils/handleRouteError.js";
 
 const bookings = new Hono({ strict: false });
 
@@ -25,16 +25,7 @@ bookings.get("/me", requireAuth, async (c) => {
 
     return c.json(myBookings, 200);
   } catch (error) {
-    if (error instanceof AppError) {
-      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-      return c.json({ error: error.message }, error.statusCode as any);
-    }
-
-    console.error("Unexpected error in GET /bookings/me:", error);
-
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch your bookings";
-    return c.json({ error: message }, 500);
+    return handleRouteError(c, error, "Failed to fetch your bookings");
   }
 });
 
@@ -57,19 +48,7 @@ bookings.get(
 
       return c.json(propertyBookings);
     } catch (error) {
-      if (error instanceof AppError) {
-        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-        return c.json({ error: error.message }, error.statusCode as any);
-      }
-
-      console.error(
-        "Unexpected error in GET /bookings/properties/:propertyId:",
-        error,
-      );
-
-      const message =
-        error instanceof Error ? error.message : "Failed to fetch bookings";
-      return c.json({ error: message }, 500);
+      return handleRouteError(c, error, "Failed to fetch bookings");
     }
   },
 );
@@ -86,16 +65,7 @@ bookings.get("/:bookingId", requireAuth, bookingParamValidator, async (c) => {
 
     return c.json(booking);
   } catch (error) {
-    if (error instanceof AppError) {
-      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-      return c.json({ error: error.message }, error.statusCode as any);
-    }
-
-    console.error("Unexpected error in GET /bookings/:bookingId:", error);
-
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch booking";
-    return c.json({ error: message }, 500);
+    return handleRouteError(c, error, "Failed to fetch booking");
   }
 });
 
@@ -123,19 +93,7 @@ bookings.post(
 
       return c.json(booking, 201);
     } catch (error) {
-      if (error instanceof AppError) {
-        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-        return c.json({ error: error.message }, error.statusCode as any);
-      }
-
-      console.error(
-        "Unexpected error in POST /bookings/properties/:propertyId:",
-        error,
-      );
-
-      const message =
-        error instanceof Error ? error.message : "Failed to create booking";
-      return c.json({ error: message }, 400);
+      return handleRouteError(c, error, "Failed to create booking");
     }
   },
 );
@@ -165,19 +123,7 @@ bookings.patch(
 
       return c.json(updatedBooking);
     } catch (error) {
-      if (error instanceof AppError) {
-        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-        return c.json({ error: error.message }, error.statusCode as any);
-      }
-
-      console.error(
-        "Unexpected error in PATCH /bookings/properties/:propertyId/:bookingId:",
-        error,
-      );
-
-      const message =
-        error instanceof Error ? error.message : "Failed to update booking";
-      return c.json({ error: message }, 400);
+      return handleRouteError(c, error, "Failed to update booking");
     }
   },
 );
@@ -207,19 +153,7 @@ bookings.put(
 
       return c.json(updatedBooking);
     } catch (error) {
-      if (error instanceof AppError) {
-        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-        return c.json({ error: error.message }, error.statusCode as any);
-      }
-
-      console.error(
-        "Unexpected error in PUT /bookings/properties/:propertyId/:bookingId:",
-        error,
-      );
-
-      const message =
-        error instanceof Error ? error.message : "Failed to update booking";
-      return c.json({ error: message }, 400);
+      return handleRouteError(c, error, "Failed to update booking");
     }
   },
 );
@@ -249,19 +183,7 @@ bookings.delete(
         200,
       );
     } catch (error) {
-      if (error instanceof AppError) {
-        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-        return c.json({ error: error.message }, error.statusCode as any);
-      }
-
-      console.error(
-        "Unexpected error in DELETE /bookings/properties/:propertyId/:bookingId:",
-        error,
-      );
-
-      const message =
-        error instanceof Error ? error.message : "Failed to delete booking";
-      return c.json({ error: message }, 500);
+      return handleRouteError(c, error, "Failed to delete booking");
     }
   },
 );

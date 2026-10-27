@@ -10,8 +10,8 @@ import {
 } from "../validators/propertyParamValidator.js";
 import { propertyQueryValidator } from "../validators/propertyQueryValidator.js";
 import { requireAuth, getAuthUser } from "../middleware/auth.js";
-import type { NewProperty, PropertyBody } from "../types/property.js";
-import { AppError } from "../utils/error.js";
+import type { PropertyBody } from "../types/property.js";
+import { handleRouteError } from "../utils/handleRouteError.js";
 
 const properties = new Hono({ strict: false });
 
@@ -24,18 +24,7 @@ properties.get("/me", requireAuth, async (c) => {
 
     return c.json(myProperties, 200);
   } catch (error) {
-    if (error instanceof AppError) {
-      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-      return c.json({ error: error.message }, error.statusCode as any);
-    }
-
-    console.error("Unexpected error in GET /properties/me:", error);
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to fetch your properties";
-    return c.json({ error: message }, 500);
+    return handleRouteError(c, error, "Failed to fetch your properties");
   }
 });
 
@@ -49,25 +38,7 @@ properties.get("/", propertyQueryValidator, async (c) => {
 
     return c.json(fetchedProperties);
   } catch (error) {
-    if (error instanceof AppError) {
-      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-      return c.json({ error: error.message }, error.statusCode as any);
-    }
-
-    console.error("Unexpected error in GET /properties:", error);
-
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch properties";
-    return c.json(
-      {
-        data: [],
-        count: 0,
-        offset: filters.offset,
-        limit: filters.limit,
-        error: message,
-      },
-      500,
-    );
+    return handleRouteError(c, error, "Failed to fetch properties");
   }
 });
 
@@ -89,18 +60,7 @@ properties.get(
 
       return c.json(fetchedProperties);
     } catch (error) {
-      if (error instanceof AppError) {
-        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-        return c.json({ error: error.message }, error.statusCode as any);
-      }
-
-      console.error("Unexpected error in GET /properties/kind/:kind:", error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch properties by kind";
-      return c.json({ error: message }, 500);
+      return handleRouteError(c, error, "Failed to fetch properties by kind");
     }
   },
 );
@@ -118,16 +78,7 @@ properties.get("/:propertyId", propertyParamValidator, async (c) => {
 
     return c.json(property);
   } catch (error) {
-    if (error instanceof AppError) {
-      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-      return c.json({ error: error.message }, error.statusCode as any);
-    }
-
-    console.error("Unexpected error in GET /properties/:propertyId:", error);
-
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch property";
-    return c.json({ error: message }, 500);
+    return handleRouteError(c, error, "Failed to fetch property");
   }
 });
 
@@ -144,16 +95,7 @@ properties.post("/", requireAuth, propertyValidator, async (c) => {
 
     return c.json(property, 201);
   } catch (error) {
-    if (error instanceof AppError) {
-      console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-      return c.json({ error: error.message }, error.statusCode as any);
-    }
-
-    console.error("Unexpected error in POST /properties:", error);
-
-    const message =
-      error instanceof Error ? error.message : "Failed to create property";
-    return c.json({ error: message }, 400);
+    return handleRouteError(c, error, "Failed to create property");
   }
 });
 
@@ -180,19 +122,7 @@ properties.patch(
 
       return c.json(updatedProperty);
     } catch (error) {
-      if (error instanceof AppError) {
-        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-        return c.json({ error: error.message }, error.statusCode as any);
-      }
-
-      console.error(
-        "Unexpected error in PATCH /properties/:propertyId:",
-        error,
-      );
-
-      const message =
-        error instanceof Error ? error.message : "Failed to update property";
-      return c.json({ error: message }, 400);
+      return handleRouteError(c, error, "Failed to update property");
     }
   },
 );
@@ -224,16 +154,7 @@ properties.put(
 
       return c.json(updatedProperty);
     } catch (error) {
-      if (error instanceof AppError) {
-        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-        return c.json({ error: error.message }, error.statusCode as any);
-      }
-
-      console.error("Unexpected error in PUT /properties/:propertyId:", error);
-
-      const message =
-        error instanceof Error ? error.message : "Failed to update property";
-      return c.json({ error: message }, 400);
+      return handleRouteError(c, error, "Failed to update property");
     }
   },
 );
@@ -258,19 +179,7 @@ properties.delete(
         200,
       );
     } catch (error) {
-      if (error instanceof AppError) {
-        console.error(`[AppError] ${error.statusCode} - ${error.message}`);
-        return c.json({ error: error.message }, error.statusCode as any);
-      }
-
-      console.error(
-        "Unexpected error in DELETE /properties/:propertyId:",
-        error,
-      );
-
-      const message =
-        error instanceof Error ? error.message : "Failed to delete property";
-      return c.json({ error: message }, 500);
+      return handleRouteError(c, error, "Failed to delete property");
     }
   },
 );

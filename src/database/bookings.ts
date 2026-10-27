@@ -3,7 +3,6 @@ import type { BasicSupabaseClient } from "../types/supabase.js";
 import type {
   Booking,
   BookingFilter,
-  BookingValidKey,
   BookingBody,
   NewBooking,
 } from "../types/booking.js";

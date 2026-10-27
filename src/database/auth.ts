@@ -1,5 +1,5 @@
 import type { BasicSupabaseClient } from "../types/supabase.js";
-import { badRequest, conflict, forbidden, AppError } from "../utils/error.js";
+import { badRequest, AppError } from "../utils/error.js";
 
 export async function signUpUser(
   supabase: BasicSupabaseClient,

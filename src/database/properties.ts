@@ -6,7 +6,6 @@ import type {
   Property,
   PropertyKind,
   PropertyListFilter,
-  PropertyValidKey,
 } from "../types/property.js";
 import { mapDbError } from "../utils/error.js";
 
