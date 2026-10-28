@@ -88,8 +88,7 @@ export async function createBooking(
   const newBooking: BookingInsert = {
     ...booking,
     property_id: propertyId,
-    user_id: userId,
-    status: booking.status ?? "pending"
+    user_id: userId
   };
 
   const { data, error }: PostgrestSingleResponse<Booking> = await supabase

@@ -48,6 +48,10 @@ export function mapDbError(error: PostgrestError): AppError {
       const hint = error.hint;
 
       switch (hint) {
+        case "INVALID_STATUS_TRANSITION":
+          return conflict(error.message, "INVALID_STATUS_TRANSITION");
+        case "FORBIDDEN":
+          return forbidden(error.message);
         case "INVALID_DATES":
         case "IMMUTABLE_FIELD":
           return badRequest(error.message, hint);

@@ -84,10 +84,7 @@ bookings.post(
       const booking = await db.createBooking(
         supabase,
         propertyId,
-        {
-          ...body,
-          status: body.status ?? "pending",
-        },
+        { ...body },
         user.id,
       );
 
