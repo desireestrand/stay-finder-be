@@ -29,7 +29,7 @@ const dateOrder = {
 };
 
 const bookingSchema = bookingObject
-  .omit({ property_id: true })
+  .omit({ property_id: true, status: true })
   .refine((data) => data.check_in < data.check_out, dateOrder);
 
 const bookingOptionalSchema = bookingObject
