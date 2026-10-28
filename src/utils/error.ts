@@ -48,6 +48,9 @@ export function mapDbError(error: PostgrestError): AppError {
       const hint = error.hint;
 
       switch (hint) {
+        case "INVALID_DATES":
+        case "IMMUTABLE_FIELD":
+          return badRequest(error.message, hint);
         case "CAPACITY_EXCEEDED":
           return badRequest(
             error.message ||
@@ -56,7 +59,7 @@ export function mapDbError(error: PostgrestError): AppError {
           );
         case "PAST_CHECKIN_NOT_ALLOWED":
         case "PAST_BOOKING_MODIFICATION_NOT_ALLOWED":
-          return badRequest(
+          return conflict(
             error.message || "This action is not allowed for past dates",
             "PAST_BOOKING_NOT_ALLOWED",
           );

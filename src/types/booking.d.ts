@@ -8,7 +8,7 @@ export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
 
 export type NewBooking = Omit<
   BookingInsert,
-  "booking_id" | "created_at" | "total_price"
+  "booking_id" | "created_at" | "total_price" | "price_per_night"
 > & {
   property_id?: string;
   user_id?: string;

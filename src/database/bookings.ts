@@ -11,7 +11,7 @@ import { mapDbError } from "../utils/error.js";
 
 const TABLE_NAME = "bookings";
 
-const SELECT_QUERY = "booking_id, property_id, user_id, guest_name, guest_email, check_in, check_out, guests, total_price, status, created_at";
+const SELECT_QUERY = "booking_id, property_id, user_id, guest_name, guest_email, check_in, check_out, guests, price_per_night, total_price, status, created_at";
 
 const QUERY_ID = "booking_id";
 const QUERY_PROPERTY_ID = "property_id";
@@ -89,8 +89,7 @@ export async function createBooking(
     ...booking,
     property_id: propertyId,
     user_id: userId,
-    status: booking.status ?? "pending",
-    total_price: 0
+    status: booking.status ?? "pending"
   };
 
   const { data, error }: PostgrestSingleResponse<Booking> = await supabase
