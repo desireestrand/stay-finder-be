@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { authValidator } from "../validators/authValidator.js";
 import { requireAuth } from "../middleware/auth.js";
 import * as dbAuth from "../database/auth.js";
+import { handleRouteError } from "../utils/handleRouteError.js";
 
 const auth = new Hono({ strict: false });
 
@@ -14,7 +15,7 @@ auth.post("/register", authValidator, async (c) => {
 
     return c.json({ user: data.user }, 201);
   } catch (error) {
-    return c.json({ error: "Failed to register user" }, 400);
+    return handleRouteError(c, error, "Failed to register user");
   }
 });
 
@@ -27,7 +28,7 @@ auth.post("/login", authValidator, async (c) => {
 
     return c.json({ user: data.user }, 200);
   } catch (error) {
-    return c.json({ error: "Failed to log in user" }, 400);
+    return handleRouteError(c, error, "Failed to log in user");
   }
 });
 
@@ -37,7 +38,7 @@ auth.get("/me", requireAuth, async (c) => {
 
     return c.json({ user });
   } catch (error) {
-    return c.json({ error: "Failed to fetch user" }, 500);
+    return handleRouteError(c, error, "Failed to fetch user");
   }
 });
 
@@ -51,7 +52,7 @@ auth.post("/logout", requireAuth, async (c) => {
 
     return c.json({ message: "Logged out" });
   } catch (error) {
-    return c.json({ error: "Failed to log out user" }, 400);
+    return handleRouteError(c, error, "Failed to log out user");
   }
 });
 

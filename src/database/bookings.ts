@@ -3,27 +3,15 @@ import type { BasicSupabaseClient } from "../types/supabase.js";
 import type {
   Booking,
   BookingFilter,
-  BookingValidKey,
   BookingBody,
   NewBooking,
+  BookingInsert,
 } from "../types/booking.js";
+import { mapDbError } from "../utils/error.js";
 
 const TABLE_NAME = "bookings";
 
-const SELECT_QUERY_LIST: BookingValidKey[] = [
-  "booking_id",
-  "property_id",
-  "user_id",
-  "guest_name",
-  "guest_email",
-  "check_in",
-  "check_out",
-  "guests",
-  "status",
-  "created_at",
-];
-
-const SELECT_QUERY = SELECT_QUERY_LIST.join(", ");
+const SELECT_QUERY = "booking_id, property_id, user_id, guest_name, guest_email, check_in, check_out, guests, price_per_night, total_price, status, created_at";
 
 const QUERY_ID = "booking_id";
 const QUERY_PROPERTY_ID = "property_id";
@@ -39,10 +27,10 @@ export async function getBookingsByUserId(
     .order("check_in", { ascending: true });
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
-  return (data as unknown as Booking[]) ?? [];
+  return data ?? [];
 }
 
 export async function getBookingsByPropertyId(
@@ -67,10 +55,10 @@ export async function getBookingsByPropertyId(
   const { data, error } = await query;
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
-  return (data as unknown as Booking[]) ?? [];
+  return data ?? [];
 }
 
 export async function getBookingById(
@@ -85,7 +73,7 @@ export async function getBookingById(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;
@@ -97,11 +85,10 @@ export async function createBooking(
   booking: BookingBody,
   userId: string,
 ): Promise<Booking> {
-  const newBooking: NewBooking = {
+  const newBooking: BookingInsert = {
     ...booking,
     property_id: propertyId,
-    user_id: userId,
-    status: booking.status ?? "pending",
+    user_id: userId
   };
 
   const { data, error }: PostgrestSingleResponse<Booking> = await supabase
@@ -111,7 +98,7 @@ export async function createBooking(
     .single();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   if (!data) {
@@ -121,7 +108,7 @@ export async function createBooking(
   return data;
 }
 
-export async function patchBooking(
+export async function patchBookingById(
   supabase: BasicSupabaseClient,
   propertyId: string,
   bookingId: string,
@@ -137,13 +124,13 @@ export async function patchBooking(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;
 }
 
-export async function updateBooking(
+export async function updateBookingById(
   supabase: BasicSupabaseClient,
   propertyId: string,
   bookingId: string,
@@ -159,13 +146,13 @@ export async function updateBooking(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;
 }
 
-export async function deleteBooking(
+export async function deleteBookingById(
   supabase: BasicSupabaseClient,
   propertyId: string,
   bookingId: string,
@@ -180,7 +167,7 @@ export async function deleteBooking(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;

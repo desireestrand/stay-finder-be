@@ -9,7 +9,7 @@ const bookingObject = z.object({
   check_in: z
     .string()
     .min(1, "Check-in date is required")
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Check in date is not valid YYYY-MM-DD"),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Check-in date is not valid YYYY-MM-DD"),
   check_out: z
     .string()
     .min(1, "Check-out date is required")
@@ -24,20 +24,20 @@ const bookingObject = z.object({
 });
 
 const dateOrder = {
-  message: "Check in can not be later than check out",
+  message: "Check-out must be after check-in",
   path: ["check_in"],
 };
 
-const bookingSchema = bookingObject.refine(
-  (data) => data.check_in <= data.check_out,
-  dateOrder,
-);
+const bookingSchema = bookingObject
+  .omit({ property_id: true, status: true })
+  .refine((data) => data.check_in < data.check_out, dateOrder);
 
 const bookingOptionalSchema = bookingObject
+  .omit({ property_id: true })
   .partial()
   .refine(
     (data) =>
-      !data.check_in || !data.check_out || data.check_in <= data.check_out,
+      !data.check_in || !data.check_out || data.check_in < data.check_out,
     dateOrder,
   );
 

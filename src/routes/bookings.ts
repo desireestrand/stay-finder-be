@@ -10,23 +10,22 @@ import {
   propertyAndBookingParamValidator,
 } from "../validators/bookingParamValidator.js";
 import { bookingQueryValidator } from "../validators/bookingQueryValidator.js";
-import { requireAuth } from "../middleware/auth.js";
-import type { User } from "@supabase/supabase-js";
-import type { BookingBody, NewBooking } from "../types/booking.js";
+import { requireAuth, getAuthUser } from "../middleware/auth.js";
+import type { BookingBody } from "../types/booking.js";
+import { handleRouteError } from "../utils/handleRouteError.js";
 
 const bookings = new Hono({ strict: false });
 
 bookings.get("/me", requireAuth, async (c) => {
   try {
     const supabase = c.get("supabase");
-
-    const user = c.get("user") as User;
+    const user = getAuthUser(c);
 
     const myBookings = await db.getBookingsByUserId(supabase, user.id);
 
     return c.json(myBookings, 200);
   } catch (error) {
-    return c.json({ error: "Failed to fetch your bookings" }, 500);
+    return handleRouteError(c, error, "Failed to fetch your bookings");
   }
 });
 
@@ -38,20 +37,18 @@ bookings.get(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { propertyId } = c.req.valid("param");
-
       const query = c.req.valid("query");
 
-      const bookings = await db.getBookingsByPropertyId(
+      const propertyBookings = await db.getBookingsByPropertyId(
         supabase,
         propertyId,
         query,
       );
 
-      return c.json(bookings);
+      return c.json(propertyBookings);
     } catch (error) {
-      return c.json({ error: "Failed to fetch bookings" }, 500);
+      return handleRouteError(c, error, "Failed to fetch bookings");
     }
   },
 );
@@ -59,9 +56,7 @@ bookings.get(
 bookings.get("/:bookingId", requireAuth, bookingParamValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
-
     const { bookingId } = c.req.valid("param");
-
     const booking = await db.getBookingById(supabase, bookingId);
 
     if (!booking) {
@@ -70,7 +65,7 @@ bookings.get("/:bookingId", requireAuth, bookingParamValidator, async (c) => {
 
     return c.json(booking);
   } catch (error) {
-    return c.json({ error: "Failed to fetch booking" }, 500);
+    return handleRouteError(c, error, "Failed to fetch booking");
   }
 });
 
@@ -82,30 +77,20 @@ bookings.post(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
-      const propertyId = c.req.param("propertyId");
-
+      const { propertyId } = c.req.valid("param");
       const body: BookingBody = c.req.valid("json");
-
-      const user = c.get("user") as User;
-
-      if (new Date(body.check_out) <= new Date(body.check_in)) {
-        return c.json({ error: "Check-out must be after check-in" }, 400);
-      }
+      const user = getAuthUser(c);
 
       const booking = await db.createBooking(
         supabase,
         propertyId,
-        {
-          ...body,
-          status: body.status ?? "pending",
-        },
+        { ...body },
         user.id,
       );
 
       return c.json(booking, 201);
     } catch (error) {
-      return c.json({ error: "Failed to create booking" }, 400);
+      return handleRouteError(c, error, "Failed to create booking");
     }
   },
 );
@@ -118,17 +103,11 @@ bookings.patch(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-      const propertyId = c.req.param("propertyId");
-      const bookingId = c.req.param("bookingId");
+      const { propertyId } = c.req.valid("param");
+      const { bookingId } = c.req.valid("param");
       const updates: Partial<BookingBody> = c.req.valid("json");
 
-      if (updates.check_in && updates.check_out) {
-        if (new Date(updates.check_out) <= new Date(updates.check_in)) {
-          return c.json({ error: "Check-out must be after check-in" }, 400);
-        }
-      }
-
-      const updatedBooking = await db.patchBooking(
+      const updatedBooking = await db.patchBookingById(
         supabase,
         propertyId,
         bookingId,
@@ -141,7 +120,7 @@ bookings.patch(
 
       return c.json(updatedBooking);
     } catch (error) {
-      return c.json({ error: "Failed to update booking" }, 400);
+      return handleRouteError(c, error, "Failed to update booking");
     }
   },
 );
@@ -154,18 +133,11 @@ bookings.put(
   async (c) => {
     try {
       const supabase = c.get("supabase");
+      const { propertyId } = c.req.valid("param");
+      const { bookingId } = c.req.valid("param");
+      const body: BookingBody = c.req.valid("json");
 
-      const propertyId = c.req.param("propertyId");
-
-      const bookingId = c.req.param("bookingId");
-
-      const body: NewBooking = c.req.valid("json");
-
-      if (new Date(body.check_out) <= new Date(body.check_in)) {
-        return c.json({ error: "Check-out must be after check-in" }, 400);
-      }
-
-      const updatedBooking = await db.updateBooking(
+      const updatedBooking = await db.updateBookingById(
         supabase,
         propertyId,
         bookingId,
@@ -178,7 +150,7 @@ bookings.put(
 
       return c.json(updatedBooking);
     } catch (error) {
-      return c.json({ error: "Failed to update booking" }, 400);
+      return handleRouteError(c, error, "Failed to update booking");
     }
   },
 );
@@ -190,12 +162,10 @@ bookings.delete(
   async (c) => {
     try {
       const supabase = c.get("supabase");
+      const { propertyId } = c.req.valid("param");
+      const { bookingId } = c.req.valid("param");
 
-      const propertyId = c.req.param("propertyId");
-
-      const bookingId = c.req.param("bookingId");
-
-      const deletedBooking = await db.deleteBooking(
+      const deletedBooking = await db.deleteBookingById(
         supabase,
         propertyId,
         bookingId,
@@ -210,7 +180,7 @@ bookings.delete(
         200,
       );
     } catch (error) {
-      return c.json({ error: "Failed to delete booking" }, 500);
+      return handleRouteError(c, error, "Failed to delete booking");
     }
   },
 );

@@ -6,26 +6,12 @@ import type {
   Property,
   PropertyKind,
   PropertyListFilter,
-  PropertyValidKey,
 } from "../types/property.js";
+import { mapDbError } from "../utils/error.js";
 
 const TABLE_NAME = "properties";
 
-const SELECT_QUERY_LIST: PropertyValidKey[] = [
-  "property_id",
-  "title",
-  "description",
-  "city",
-  "country",
-  "price_per_night",
-  "max_guests",
-  "kind",
-  "image_url",
-  "user_id",
-  "created_at",
-];
-
-const SELECT_QUERY = SELECT_QUERY_LIST.join(", ");
+const SELECT_QUERY = "property_id, title, description, city, country, price_per_night, max_guests, kind, image_url, user_id, created_at";
 
 const QUERY_ID = "property_id";
 const QUERY_KIND = "kind";
@@ -48,11 +34,11 @@ async function getBookedPropertyIds(
   const { data, error } = await supabase
     .from("booking_availability")
     .select("property_id")
-    .lte("check_in", endDate)
-    .gte("check_out", startDate);
+    .lt("check_in", endDate)
+    .gt("check_out", startDate);
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return [
@@ -80,7 +66,7 @@ function applyPropertyFilters(
   filters: PropertyListFilter,
 ) {
   if (filters.city) {
-    query = query.eq("city", filters.city);
+    query = query.ilike("city", filters.city);
   }
 
   if (filters.max_guests) {
@@ -122,10 +108,10 @@ export async function getPropertiesByUserId(
     .order("created_at", { ascending: true });
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
-  return (data as unknown as Property[]) ?? [];
+  return data ?? [];
 }
 
 export async function getProperties(
@@ -147,11 +133,11 @@ export async function getProperties(
   const { data, error, count } = await filteredQuery;
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return {
-    data: (data as unknown as Property[]) ?? [],
+    data: data ?? [],
     count: count ?? 0,
     offset: filters.offset,
     limit: filters.limit,
@@ -178,11 +164,11 @@ export async function getPropertiesByKind(
   const { data, error, count } = await filteredQuery;
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return {
-    data: (data as unknown as Property[]) ?? [],
+    data: data ?? [],
     count: count ?? 0,
     offset: filters.offset,
     limit: filters.limit,
@@ -201,9 +187,8 @@ export async function getPropertyById(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
-
   return data;
 }
 
@@ -218,7 +203,7 @@ export async function createProperty(
     .single();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   if (!data) {
@@ -242,7 +227,7 @@ export async function patchPropertyById(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;
@@ -262,7 +247,7 @@ export async function updatePropertyById(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;
@@ -281,7 +266,7 @@ export async function deletePropertyById(
       .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw mapDbError(error);
   }
 
   return data;

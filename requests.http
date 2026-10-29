@@ -1,96 +1,958 @@
-### Root
-GET http://localhost:3000/
+# =====================================================================
+# StayFinder: testanrop för G1-G16 och VG1-VG7
+# =====================================================================
 
-### Get all properties
-GET http://localhost:3000/properties
+@baseUrl = http://localhost:3000
+@supabaseUrl = https://ivigodambfrohoncepou.supabase.co
+@key = sb_publishable_RTwWiKfGtwqpqCBKJCLRhQ_BJTytxIL
 
-### Get property by id
-GET http://localhost:3000/properties/00000000-0000-0000-0000-000000000001
+@password = password123
+@ownerEmail = test@example.com
+@guestEmail = guest.test@example.com
+@otherEmail = other.test@example.com
 
-### Get property by invalid uuid
-GET http://localhost:3000/properties/not-a-valid-uuid
+@propertyId = a0ee6254-8c87-4318-b21a-e53b49734002
+@pastPropertyId = a0ee6254-8c87-4318-b21a-e53b49734007
 
-### Create property
-POST http://localhost:3000/properties
+# =====================================================================
+# 1. DATABASEN (G15: RLS skyddar tabellerna själv)
+# =====================================================================
+
+### 1.1 Anonym läsning av boenden -> FÖRVÄNTAT: 200 med boenden
+GET {{supabaseUrl}}/rest/v1/properties?select=property_id,title&limit=3
+apikey: {{key}}
+Authorization: Bearer {{key}}
+
+### 1.2 Anonym läsning av bokningar -> FÖRVÄNTAT: 200 med tom lista []
+GET {{supabaseUrl}}/rest/v1/bookings?select=*
+apikey: {{key}}
+Authorization: Bearer {{key}}
+
+### 1.3 Anonym INSERT på boenden -> FÖRVÄNTAT: 401 eller 403 (RLS nekar)
+POST {{supabaseUrl}}/rest/v1/properties
+apikey: {{key}}
+Authorization: Bearer {{key}}
 Content-Type: application/json
 
 {
-  "title": "Small studio in Malmö",
-  "description": "A compact studio close to cafés and the central station.",
-  "city": "Malmö",
+  "user_id": "5db14e43-c106-46c3-aaae-d0aed5bcc056",
+  "title": "Hackat boende",
+  "description": "Ska inte gå",
+  "city": "Test",
   "country": "Sweden",
-  "price_per_night": 990,
-  "max_guests": 2,
-  "image_url": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688"
+  "price_per_night": 100,
+  "max_guests": 1,
+  "kind": "cabin"
 }
 
-### Create invalid property
-POST http://localhost:3000/properties
+### 1.4 Anonym DELETE -> FÖRVÄNTAT: ingenting raderas ([] eller nekas)
+DELETE {{supabaseUrl}}/rest/v1/properties?property_id=eq.{{propertyId}}
+apikey: {{key}}
+Authorization: Bearer {{key}}
+Prefer: return=representation
+
+### 1.5 Vyn för lediga datum visar bara id och datum, inga personuppgifter -> FÖRVÄNTAT: 200, bara kolumnerna property_id, check_in, check_out
+GET {{supabaseUrl}}/rest/v1/booking_availability?select=*&limit=3
+apikey: {{key}}
+Authorization: Bearer {{key}}
+
+# =====================================================================
+# 2. KONTO OCH INLOGGNING (G1, G2, G3)
+# =====================================================================
+
+### 2.1 API:ts rot -> FÖRVÄNTAT: 200
+GET {{baseUrl}}/
+
+### 2.2 Okänd route -> FÖRVÄNTAT: 404
+GET {{baseUrl}}/finns-inte
+
+### 2.3 Registrera gäst -> FÖRVÄNTAT: 201 (en andra körning ger fel: kontot finns redan)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{ "email": "{{guestEmail}}", "password": "{{password}}" }
+
+### 2.4 Registrera utomstående användare -> FÖRVÄNTAT: 201
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{ "email": "{{otherEmail}}", "password": "{{password}}" }
+
+### 2.5 Registrering med ogiltig e-post och kort lösenord -> FÖRVÄNTAT: 400 med en errors-lista (en post per fält)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{ "email": "inte-en-epost", "password": "123" }
+
+### 2.6 Inloggning med fel lösenord -> FÖRVÄNTAT: 401 INVALID_CREDENTIALS
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{guestEmail}}", "password": "fel-losenord" }
+
+### 2.7 Logga ut först, så att ingen session finns kvar -> FÖRVÄNTAT: 401 om ingen var inloggad (det är okej), annars 200
+POST {{baseUrl}}/auth/logout
+
+### 2.8 Hämta inloggad användare utan session -> FÖRVÄNTAT: 401 Unauthorized
+GET {{baseUrl}}/auth/me
+
+### 2.9 Logga in som gäst -> FÖRVÄNTAT: 200 med user (cookie sätts)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{guestEmail}}", "password": "{{password}}" }
+
+### 2.10 Hämta inloggad användare (G2: sessionen finns kvar) -> FÖRVÄNTAT: 200
+GET {{baseUrl}}/auth/me
+
+### 2.11 Logga ut -> FÖRVÄNTAT: 200
+POST {{baseUrl}}/auth/logout
+
+### 2.12 Efter utloggning -> FÖRVÄNTAT: 401
+GET {{baseUrl}}/auth/me
+
+# =====================================================================
+# 3. BOENDEN: LISTA, FILTER OCH SORTERING (G4, G5, G8)
+# =====================================================================
+
+### 3.1 Lista alla boenden -> FÖRVÄNTAT: 200, count = 21, 10 boenden i data
+GET {{baseUrl}}/properties
+
+### 3.2 Filtrera på plats -> FÖRVÄNTAT: 200, bara boenden i Stockholm
+GET {{baseUrl}}/properties?city=Stockholm
+
+### 3.3 Filtrera på maxpris -> FÖRVÄNTAT: 200, inget över 1000 kr
+GET {{baseUrl}}/properties?max_price=1000
+
+### 3.4 Filtrera på antal gäster -> FÖRVÄNTAT: 200, alla har minst 8 platser
+GET {{baseUrl}}/properties?max_guests=8
+
+### 3.5 Alla tre filter samtidigt -> FÖRVÄNTAT: 200, Stockholm, högst 1400 kr, minst 2 gäster
+GET {{baseUrl}}/properties?city=Stockholm&max_price=1400&max_guests=2
+
+### 3.6 Sortera på pris stigande (görs i databasen) -> FÖRVÄNTAT: 700, 750, 850 ...
+GET {{baseUrl}}/properties?sort_by=price_per_night&sort_order=asc
+
+### 3.7 Sortera på pris fallande -> FÖRVÄNTAT: 2600, 2400, 2300 ...
+GET {{baseUrl}}/properties?sort_by=price_per_night&sort_order=desc
+
+### 3.8 Kategori -> FÖRVÄNTAT: 200, bara kind = cabin
+GET {{baseUrl}}/properties/kind/cabin
+
+### 3.9 Ogiltig kategori -> FÖRVÄNTAT: 400
+GET {{baseUrl}}/properties/kind/castle
+
+### 3.10 Detaljsida -> FÖRVÄNTAT: 200, "Cozy cabin near the forest"
+GET {{baseUrl}}/properties/{{propertyId}}
+
+### 3.11 Boende som inte finns -> FÖRVÄNTAT: 404 "Property not found"
+GET {{baseUrl}}/properties/00000000-0000-4000-8000-000000000000
+
+### 3.12 Ogiltigt id -> FÖRVÄNTAT: 400 (inget giltigt uuid)
+GET {{baseUrl}}/properties/inte-ett-uuid
+
+### 3.13 Ogiltiga filter -> FÖRVÄNTAT: 400 (gäster måste vara minst 1)
+GET {{baseUrl}}/properties?max_guests=0
+
+### 3.14 Ogiltig sortering -> FÖRVÄNTAT: 400
+GET {{baseUrl}}/properties?sort_by=password
+
+# =====================================================================
+# 4. BOENDEN: SKAPA, ÄNDRA, TA BORT (G6, G7, VG1)
+# =====================================================================
+
+### 4.1 Utloggad: skapa boende -> FÖRVÄNTAT: 401
+POST {{baseUrl}}/properties
 Content-Type: application/json
 
 {
-  "title": "",
-  "description": "Missing valid title and invalid price.",
-  "city": "Malmö",
+  "title": "Utloggat", "description": "Ska inte gå", "city": "Test",
+  "country": "Sweden", "price_per_night": 500, "max_guests": 2, "kind": "cabin"
+}
+
+### 4.2 Utloggad: ändra seed-boende -> FÖRVÄNTAT: 401
+PATCH {{baseUrl}}/properties/{{propertyId}}
+Content-Type: application/json
+
+{ "price_per_night": 1 }
+
+### 4.3 Utloggad: ta bort seed-boende -> FÖRVÄNTAT: 401
+DELETE {{baseUrl}}/properties/{{propertyId}}
+
+### 4.4 Logga in som gäst
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{guestEmail}}", "password": "{{password}}" }
+
+### 4.5 Skapa boende (G7), försöker också skicka med en annans user_id -> FÖRVÄNTAT: 201, och user_id i svaret är DITT eget id, inte det vi skickade (ägaren sätts av servern från sessionen) 
+# @name guestProperty
+POST {{baseUrl}}/properties
+Content-Type: application/json
+
+{
+  "title": "Gästens testboende",
+  "description": "Ett boende skapat via API:t.",
+  "city": "Lund",
   "country": "Sweden",
-  "price_per_night": 0,
-  "max_guests": 2
+  "price_per_night": 1450,
+  "max_guests": 4,
+  "kind": "apartment",
+  "image_url": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688",
+  "user_id": "5db14e43-c106-46c3-aaae-d0aed5bcc056"
 }
 
-### Update property
-PUT http://localhost:3000/properties/00000000-0000-0000-0000-000000000001
+### 4.6 Ogiltigt boende -> FÖRVÄNTAT: 400 med errors för title, city, price_per_night, max_guests och kind
+POST {{baseUrl}}/properties
 Content-Type: application/json
 
 {
-  "title": "Updated apartment in Stockholm",
-  "description": "Updated description.",
-  "city": "Stockholm",
-  "country": "Sweden",
-  "price_per_night": 1390,
-  "max_guests": 2,
-  "image_url": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267"
+  "title": "", "description": "Ogiltigt", "city": "", "country": "Sweden",
+  "price_per_night": 0, "max_guests": 0, "kind": "castle"
 }
 
-### Delete property
-DELETE http://localhost:3000/properties/00000000-0000-0000-0000-000000000003
-
-### Register
-POST http://localhost:3000/auth/register
+### 4.7 Ogiltig bild-URL -> FÖRVÄNTAT: 400 (image_url)
+POST {{baseUrl}}/properties
 Content-Type: application/json
 
 {
-  "email": "alex@example.com",
-  "password": "password123"
+  "title": "Fel URL", "description": "x", "city": "Lund", "country": "Sweden",
+  "price_per_night": 500, "max_guests": 2, "kind": "cabin", "image_url": "inte-en-url"
 }
 
-### Login
-POST http://localhost:3000/auth/login
+### 4.8 Ändra eget boende -> FÖRVÄNTAT: 200, nytt pris
+PATCH {{baseUrl}}/properties/{{guestProperty.response.body.$.property_id}}
+Content-Type: application/json
+
+{ "price_per_night": 1550 }
+
+### 4.9 Mina boenden -> FÖRVÄNTAT: 200, innehåller gästens testboende
+GET {{baseUrl}}/properties/me
+
+### 4.10 Logga in som utomstående användare
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{otherEmail}}", "password": "{{password}}" }
+
+### 4.11 VG1: ändra någon annans boende -> FÖRVÄNTAT: 404 (databasen släpper inte igenom raden, RLS)
+PATCH {{baseUrl}}/properties/{{guestProperty.response.body.$.property_id}}
+Content-Type: application/json
+
+{ "price_per_night": 1 }
+
+### 4.12 VG1: ta bort någon annans boende -> FÖRVÄNTAT: 404
+DELETE {{baseUrl}}/properties/{{guestProperty.response.body.$.property_id}}
+
+### 4.13 VG1: ändra seed-boendet som utomstående -> FÖRVÄNTAT: 404
+PATCH {{baseUrl}}/properties/{{propertyId}}
+Content-Type: application/json
+
+{ "price_per_night": 1 }
+
+### 4.14 Mina boenden som utomstående -> FÖRVÄNTAT: 200 med tom lista []
+GET {{baseUrl}}/properties/me
+
+### 4.15 Logga in som gäst igen och ta bort det egna boendet (städning) -> FÖRVÄNTAT: 200
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{guestEmail}}", "password": "{{password}}" }
+
+###
+DELETE {{baseUrl}}/properties/{{guestProperty.response.body.$.property_id}}
+
+### 4.16 Det borttagna boendet -> FÖRVÄNTAT: 404
+GET {{baseUrl}}/properties/{{guestProperty.response.body.$.property_id}}
+
+# =====================================================================
+# 5. BOKNINGAR: SKAPA OCH VALIDERA (G9, G10, G11, VG2, VG3, VG5, VG6)
+# =====================================================================
+
+### 5.1 Utloggad: boka -> FÖRVÄNTAT: 401 (G9: utloggad uppmanas logga in)
+POST {{baseUrl}}/auth/logout
+
+###
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
 Content-Type: application/json
 
 {
-  "email": "alex@example.com",
-  "password": "password123"
+  "guest_name": "Utloggad", "guest_email": "u@example.com",
+  "check_in": "2030-06-10", "check_out": "2030-06-13", "guests": 2
 }
 
-### Me
-GET http://localhost:3000/auth/me
+### 5.2 Logga in som gäst
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
 
-### Logout
-POST http://localhost:3000/auth/logout
+{ "email": "{{guestEmail}}", "password": "{{password}}" }
 
-### Public route
-GET http://localhost:3000/properties
-
-### Protected route
-POST http://localhost:3000/properties
+### 5.3 Giltig bokning A, 10-13 juni, 3 nätter -> FÖRVÄNTAT: 201, status "pending", price_per_night 850, total_price 2550 (3 x 850, räknat av servern)
+# @name bookingA
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
 Content-Type: application/json
 
 {
-  "title": "Logged in user apartment",
-  "description": "A property created through a protected route.",
-  "city": "Stockholm",
-  "country": "Sweden",
-  "price_per_night": 1200,
-  "max_guests": 2,
-  "image_url": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267"
+  "guest_name": "Gästen",
+  "guest_email": "guest.test@example.com",
+  "check_in": "2030-06-10",
+  "check_out": "2030-06-13",
+  "guests": 2
 }
+
+### 5.4 VG6: klienten skickar eget pris och status -> FÖRVÄNTAT: 201, total_price 1700 (2 x 850) och status "pending". total_price=1, price_per_night=1 och status=confirmed IGNORERAS
+# @name bookingB
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen",
+  "guest_email": "guest.test@example.com",
+  "check_in": "2030-07-01",
+  "check_out": "2030-07-03",
+  "guests": 2,
+  "total_price": 1,
+  "price_per_night": 1,
+  "status": "confirmed"
+}
+
+### 5.5 VG3: exakt max antal gäster (4) -> FÖRVÄNTAT: 201
+# @name bookingC
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen",
+  "guest_email": "guest.test@example.com",
+  "check_in": "2030-08-01",
+  "check_out": "2030-08-03",
+  "guests": 4
+}
+
+### 5.6 VG3: fler gäster än boendets max (5 > 4) -> FÖRVÄNTAT: 400 CAPACITY_EXCEEDED
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen",
+  "guest_email": "guest.test@example.com",
+  "check_in": "2030-09-01",
+  "check_out": "2030-09-03",
+  "guests": 5
+}
+
+### 5.7 G10: ogiltig e-post -> FÖRVÄNTAT: 400 (guest_email)
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "inte-en-epost",
+  "check_in": "2030-09-01", "check_out": "2030-09-03", "guests": 2
+}
+
+### 5.8 G10: noll gäster -> FÖRVÄNTAT: 400 "Guests must be greater than 0"
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-09-01", "check_out": "2030-09-03", "guests": 0
+}
+
+### 5.9 G10: incheckning efter utcheckning -> FÖRVÄNTAT: 400 "Check-out must be after check-in"
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-09-05", "check_out": "2030-09-01", "guests": 2
+}
+
+### 5.10 Samma dag in och ut -> FÖRVÄNTAT: 400 "Check-out must be after check-in"
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-09-05", "check_out": "2030-09-05", "guests": 2
+}
+
+### 5.11 Fält saknas och datumet har fel format -> FÖRVÄNTAT: 400 (flera errors)
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{ "guest_email": "guest.test@example.com", "check_in": "10 juni", "check_out": "2030-09-05", "guests": 2 }
+
+### 5.12 VG5: incheckning i det förflutna -> FÖRVÄNTAT: 409 PAST_BOOKING_NOT_ALLOWED
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2020-01-01", "check_out": "2020-01-03", "guests": 2
+}
+
+### 5.13 Boende som inte finns -> FÖRVÄNTAT: 404 PROPERTY_NOT_FOUND
+POST {{baseUrl}}/bookings/properties/00000000-0000-4000-8000-000000000000
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-09-01", "check_out": "2030-09-03", "guests": 2
+}
+
+# ----- VG2: dubbelbokningar. Bokning A ligger på 10-13 juni -----
+### 5.14 VG2: exakt samma datum -> FÖRVÄNTAT: 409 BOOKING_OVERLAP
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-06-10", "check_out": "2030-06-13", "guests": 2
+}
+
+### 5.15 VG2: överlappar i slutet (12-15) -> FÖRVÄNTAT: 409 BOOKING_OVERLAP
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-06-12", "check_out": "2030-06-15", "guests": 2
+}
+
+### 5.16 VG2: överlappar i början (8-11) -> FÖRVÄNTAT: 409 BOOKING_OVERLAP
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-06-08", "check_out": "2030-06-11", "guests": 2
+}
+
+### 5.17 VG2: ligger helt inuti (11-12) -> FÖRVÄNTAT: 409 BOOKING_OVERLAP
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-06-11", "check_out": "2030-06-12", "guests": 2
+}
+
+### 5.18 VG2: omsluter hela bokningen (9-14) -> FÖRVÄNTAT: 409 BOOKING_OVERLAP
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-06-09", "check_out": "2030-06-14", "guests": 2
+}
+
+### 5.19 VG2 gränsfall: incheckning samma dag som A:s utcheckning (13-15) -> FÖRVÄNTAT: 201 (utcheckningsdagen räknas inte som upptagen)
+# @name bookingD
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-06-13", "check_out": "2030-06-15", "guests": 2
+}
+
+### 5.20 VG2 gränsfall: utcheckning samma dag som A:s incheckning (8-10) -> FÖRVÄNTAT: 201
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-06-08", "check_out": "2030-06-10", "guests": 2
+}
+
+### 5.21 VG2: samma datum på ett ANNAT boende -> FÖRVÄNTAT: 201 (en krock gäller bara samma boende)
+POST {{baseUrl}}/bookings/properties/a0ee6254-8c87-4318-b21a-e53b49734001
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2030-06-10", "check_out": "2030-06-12", "guests": 2
+}
+
+# ----- VG2 vid ändring -----
+### 5.22 VG2: korta bokning A till 10-12. Den krockar inte med sig själv -> FÖRVÄNTAT: 200, total_price räknas om till 1700 (2 x 850)
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingA.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "check_in": "2030-06-10", "check_out": "2030-06-12" }
+
+### 5.23 VG2: förläng A till 14 juni så att den krockar med D (13-15) -> FÖRVÄNTAT: 409 BOOKING_OVERLAP
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingA.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "check_out": "2030-06-14" }
+
+### 5.24 VG3 vid ändring: öka gästerna över max -> FÖRVÄNTAT: 400 CAPACITY_EXCEEDED
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingA.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "guests": 5 }
+
+### 5.25 VG5 vid ändring: flytta incheckningen bakåt i tiden -> FÖRVÄNTAT: 409 PAST_BOOKING_NOT_ALLOWED
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingA.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "check_in": "2020-01-01" }
+
+### 5.26 Ändra bara incheckningen till efter utcheckningen -> FÖRVÄNTAT: 400 INVALID_DATES (zod ser bara ett datum, databasen fångar det)
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingA.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "check_in": "2030-06-20" }
+
+# =====================================================================
+# 6. LEDIGA DATUM (VG7). Kombineras med filter (G5) och sortering (G8)
+# =====================================================================
+
+### 6.1 Upptagen period + plats Falun -> FÖRVÄNTAT: 200, count 0
+GET {{baseUrl}}/properties?city=Falun&start_date=2030-06-10&end_date=2030-06-12
+
+### 6.2 Period som delvis överlappar (9-11 juni) -> FÖRVÄNTAT: count 0
+GET {{baseUrl}}/properties?city=Falun&start_date=2030-06-09&end_date=2030-06-11
+
+### 6.3 Hela året -> FÖRVÄNTAT: count 0
+GET {{baseUrl}}/properties?city=Falun&start_date=2030-01-01&end_date=2030-12-31
+
+### 6.4 Ledig lucka mellan A och D (12-13 juni) -> FÖRVÄNTAT: count 1 (boende 002)
+GET {{baseUrl}}/properties?city=Falun&start_date=2030-06-12&end_date=2030-06-13
+
+### 6.5 Period efter D:s utcheckning (15-17 juni) -> FÖRVÄNTAT: count 1
+GET {{baseUrl}}/properties?city=Falun&start_date=2030-06-15&end_date=2030-06-17
+
+### 6.6 Utan platsfilter, upptagen period -> FÖRVÄNTAT: count 19 (boende 002 och boende 001 saknas, båda är bokade 10-12 juni)
+GET {{baseUrl}}/properties?start_date=2030-06-10&end_date=2030-06-12
+
+### 6.7 Kombinerat med filter och sortering: maxpris, gäster, pris stigande -> FÖRVÄNTAT: sorterat 700, 750, 920 ... och "Cozy cabin near the forest" (850 kr) saknas, eftersom det är upptaget
+GET {{baseUrl}}/properties?start_date=2030-06-10&end_date=2030-06-12&max_price=1300&max_guests=2&sort_by=price_per_night&sort_order=asc
+
+### 6.8 Samma sökning på en ledig period (12-13 juni) -> FÖRVÄNTAT: 700, 750, 850 ... och boende 002 FINNS med
+GET {{baseUrl}}/properties?start_date=2030-06-12&end_date=2030-06-13&max_price=1300&max_guests=2&sort_by=price_per_night&sort_order=asc
+
+### 6.9 Bara startdatum -> FÖRVÄNTAT: 400 (båda datum krävs)
+GET {{baseUrl}}/properties?start_date=2030-06-10
+
+### 6.10 Bara slutdatum -> FÖRVÄNTAT: 400
+GET {{baseUrl}}/properties?end_date=2030-06-12
+
+### 6.11 Slut före start -> FÖRVÄNTAT: 400 "End date must be after start date"
+GET {{baseUrl}}/properties?start_date=2030-06-12&end_date=2030-06-10
+
+### 6.12 Samma dag -> FÖRVÄNTAT: 400
+GET {{baseUrl}}/properties?start_date=2030-06-10&end_date=2030-06-10
+
+### 6.13 Start i det förflutna -> FÖRVÄNTAT: 400 "Start date cannot be in the past"
+GET {{baseUrl}}/properties?start_date=2020-01-01&end_date=2020-01-05
+
+### 6.14 Fel datumformat -> FÖRVÄNTAT: 400
+GET {{baseUrl}}/properties?start_date=10-06-2030&end_date=12-06-2030
+
+# =====================================================================
+# 7. ÄGARSKAP FÖR BOKNINGAR (VG1)
+# =====================================================================
+
+### 7.1 Gästen ser sina egna bokningar -> FÖRVÄNTAT: 200, minst A, B, C, D, E
+GET {{baseUrl}}/bookings/me
+
+### 7.2 Logga in som utomstående användare
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{otherEmail}}", "password": "{{password}}" }
+
+### 7.3 Utomstående hämtar gästens bokning med id -> FÖRVÄNTAT: 404
+GET {{baseUrl}}/bookings/{{bookingA.response.body.$.booking_id}}
+
+### 7.4 Utomståendes egna bokningar -> FÖRVÄNTAT: 200 med tom lista []
+GET {{baseUrl}}/bookings/me
+
+### 7.5 Bokningar för boendet, som icke-ägare -> FÖRVÄNTAT: 200 med tom lista [] (RLS döljer allt)
+GET {{baseUrl}}/bookings/properties/{{propertyId}}
+
+### 7.6 Utomstående försöker avboka gästens bokning -> FÖRVÄNTAT: 404
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingA.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "status": "cancelled" }
+
+### 7.7 Utomstående försöker radera gästens bokning -> FÖRVÄNTAT: 404
+DELETE {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingA.response.body.$.booking_id}}
+
+### 7.8 VG2 + VG1: utomstående kan inte SE bokning A men blir ändå nekad när hen försöker boka samma datum (10-12 juni) -> FÖRVÄNTAT: 409 BOOKING_OVERLAP (kontrollen ligger i databasen)
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Utomstående", "guest_email": "other.test@example.com",
+  "check_in": "2030-06-10", "check_out": "2030-06-12", "guests": 2
+}
+
+### 7.9 Utomstående gör en egen giltig bokning (1-3 oktober) -> FÖRVÄNTAT: 201
+# @name otherBooking
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Utomstående", "guest_email": "other.test@example.com",
+  "check_in": "2030-10-01", "check_out": "2030-10-03", "guests": 2
+}
+
+### 7.10 Logga in som ägare
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{ownerEmail}}", "password": "{{password}}" }
+
+### 7.11 Ägaren ser ALLA bokningar för sitt boende -> FÖRVÄNTAT: 200, innehåller gästens (A-E) och utomståendes bokning
+GET {{baseUrl}}/bookings/properties/{{propertyId}}
+
+### 7.12 Ägaren hämtar gästens bokning med id -> FÖRVÄNTAT: 200
+GET {{baseUrl}}/bookings/{{bookingA.response.body.$.booking_id}}
+
+# =====================================================================
+# 8. STATUSFLÖDE MED ROLLER (VG4)
+# =====================================================================
+
+### 8.1 Logga in som gäst
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{guestEmail}}", "password": "{{password}}" }
+
+### 8.2 Gäst bekräftar sin egen bokning -> FÖRVÄNTAT: 403 FORBIDDEN
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "status": "confirmed" }
+
+### 8.3 Gäst ändrar antal gäster på väntande bokning -> FÖRVÄNTAT: 200
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "guests": 3 }
+
+### 8.4 Okänt statusvärde -> FÖRVÄNTAT: 400 (stoppas av zod)
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "status": "archived" }
+
+### 8.5 Logga in som ägare
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{ownerEmail}}", "password": "{{password}}" }
+
+### 8.6 Ägaren bekräftar bokning B (pending -> confirmed) -> FÖRVÄNTAT: 200, status "confirmed"
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "status": "confirmed" }
+
+### 8.7 Ägaren sätter tillbaka till pending (confirmed -> pending) -> FÖRVÄNTAT: 409 INVALID_STATUS_TRANSITION
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "status": "pending" }
+
+### 8.8 Ägaren avbokar väntande bokning C (pending -> cancelled) -> FÖRVÄNTAT: 200, status "cancelled"
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingC.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "status": "cancelled" }
+
+### 8.9 Ägaren försöker ändra den avbokade -> FÖRVÄNTAT: 409 INVALID_STATUS_TRANSITION
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingC.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "guests": 1 }
+
+### 8.10 Logga in som gäst
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{guestEmail}}", "password": "{{password}}" }
+
+### 8.11 Gästen avbokar den bekräftade bokningen B (confirmed -> cancelled) -> FÖRVÄNTAT: 200, status "cancelled"
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "status": "cancelled" }
+
+### 8.12 Gästen försöker återuppliva den avbokade (cancelled -> pending) -> FÖRVÄNTAT: 409 INVALID_STATUS_TRANSITION
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "status": "pending" }
+
+### 8.13 Gästen försöker bekräfta den avbokade (cancelled -> confirmed) -> FÖRVÄNTAT: 409 INVALID_STATUS_TRANSITION
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "status": "confirmed" }
+
+### 8.14 Gästen försöker ändra datum på den avbokade -> FÖRVÄNTAT: 409
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "check_in": "2030-07-02", "check_out": "2030-07-05" }
+
+### 8.15 Logga in som utomstående
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{otherEmail}}", "password": "{{password}}" }
+
+### 8.16 VG2: en AVBOKAD bokning blockerar inte längre datumen. Utomstående bokar B:s tidigare datum (1-3 juli) -> FÖRVÄNTAT: 201
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Utomstående", "guest_email": "other.test@example.com",
+  "check_in": "2030-07-01", "check_out": "2030-07-03", "guests": 2
+}
+
+# =====================================================================
+# 9. SE, ÄNDRA OCH TA BORT BOKNINGAR (G12)
+# =====================================================================
+
+### 9.1 Logga in som gäst
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{guestEmail}}", "password": "{{password}}" }
+
+### 9.2 Hämta en bokning -> FÖRVÄNTAT: 200
+GET {{baseUrl}}/bookings/{{bookingA.response.body.$.booking_id}}
+
+### 9.3 Ogiltigt boknings-id -> FÖRVÄNTAT: 400
+GET {{baseUrl}}/bookings/inte-ett-uuid
+
+### 9.4 Bokning som inte finns -> FÖRVÄNTAT: 404 "Booking not found"
+GET {{baseUrl}}/bookings/00000000-0000-4000-8000-000000000000
+
+### 9.5 Ändra bokning som inte finns -> FÖRVÄNTAT: 404
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/00000000-0000-4000-8000-000000000000
+Content-Type: application/json
+
+{ "guests": 1 }
+
+### 9.6 Ta bort en framtida väntande bokning (D) -> FÖRVÄNTAT: 200
+DELETE {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingD.response.body.$.booking_id}}
+
+### 9.7 Ta bort en avbokad bokning (B) -> FÖRVÄNTAT: 200
+DELETE {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
+
+### 9.8 Den borttagna bokningen finns inte längre -> FÖRVÄNTAT: 404
+GET {{baseUrl}}/bookings/{{bookingB.response.body.$.booking_id}}
+
+### 9.9 Ta bort bokning som inte finns -> FÖRVÄNTAT: 404
+DELETE {{baseUrl}}/bookings/properties/{{propertyId}}/00000000-0000-4000-8000-000000000000
+
+# =====================================================================
+# 10. PRISET FRYSS VID BOKNINGEN (VG6)
+# =====================================================================
+
+### 10.1 Logga in som ägare
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{ownerEmail}}", "password": "{{password}}" }
+
+### 10.2 Ägaren höjer priset från 850 till 5000 kr -> FÖRVÄNTAT: 200
+PATCH {{baseUrl}}/properties/{{propertyId}}
+Content-Type: application/json
+
+{ "price_per_night": 5000 }
+
+### 10.3 Bokning A efter prishöjningen -> FÖRVÄNTAT: 200, price_per_night FORTFARANDE 850, total_price 1700
+GET {{baseUrl}}/bookings/{{bookingA.response.body.$.booking_id}}
+
+### 10.4 Logga in som gäst
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{guestEmail}}", "password": "{{password}}" }
+
+### 10.5 Gästen ändrar bokning A efter prishöjningen (ändrar bara antal gäster) -> FÖRVÄNTAT: 200, total_price FORTFARANDE 1700 (sparade nattpriset 850)
+PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingA.response.body.$.booking_id}}
+Content-Type: application/json
+
+{ "guests": 3 }
+
+### 10.6 En NY bokning får det nya priset -> FÖRVÄNTAT: 201, price_per_night 5000, total_price 10000 (2 x 5000)
+POST {{baseUrl}}/bookings/properties/{{propertyId}}
+Content-Type: application/json
+
+{
+  "guest_name": "Gästen", "guest_email": "guest.test@example.com",
+  "check_in": "2031-01-10", "check_out": "2031-01-12", "guests": 2
+}
+
+### 10.7 Logga in som ägare och återställ priset till 850
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{ownerEmail}}", "password": "{{password}}" }
+
+###
+PATCH {{baseUrl}}/properties/{{propertyId}}
+Content-Type: application/json
+
+{ "price_per_night": 850 }
+
+# =====================================================================
+# 11. PASSERADE BOKNINGAR (VG5)
+# =====================================================================
+
+### 11.1 Hämta den passerade bokningen (filtrerar på incheckning i februari) -> FÖRVÄNTAT: 200 med en bokning (status confirmed)
+# @name pastBookings
+GET {{baseUrl}}/bookings/properties/{{pastPropertyId}}?from=2026-02-01&to=2026-02-28
+
+### 11.2 Ändra en passerad bokning -> FÖRVÄNTAT: 409 PAST_BOOKING_NOT_ALLOWED
+PATCH {{baseUrl}}/bookings/properties/{{pastPropertyId}}/{{pastBookings.response.body.$[0].booking_id}}
+Content-Type: application/json
+
+{ "guests": 1 }
+
+### 11.3 Avboka en passerad bokning -> FÖRVÄNTAT: 409 PAST_BOOKING_NOT_ALLOWED
+PATCH {{baseUrl}}/bookings/properties/{{pastPropertyId}}/{{pastBookings.response.body.$[0].booking_id}}
+Content-Type: application/json
+
+{ "status": "cancelled" }
+
+### 11.4 Radera en passerad bokning -> FÖRVÄNTAT: 409 PAST_BOOKING_NOT_ALLOWED
+DELETE {{baseUrl}}/bookings/properties/{{pastPropertyId}}/{{pastBookings.response.body.$[0].booking_id}}
+
+# =====================================================================
+# 12. REGLERNA GÄLLER ÄVEN NÄR API:T KRINGGÅS (G15, VG1-VG6)
+# =====================================================================
+
+### 12.1 Hämta en token för den utomstående användaren -> FÖRVÄNTAT: 200 med access_token och user.id
+# @name otherToken
+POST {{supabaseUrl}}/auth/v1/token?grant_type=password
+apikey: {{key}}
+Content-Type: application/json
+
+{ "email": "{{otherEmail}}", "password": "{{password}}" }
+
+### 12.2 VG1: läs bokningar direkt -> FÖRVÄNTAT: 200, bara den utomståendes egna bokningar, inga av gästens
+GET {{supabaseUrl}}/rest/v1/bookings?select=booking_id,user_id,guest_name,check_in,check_out
+apikey: {{key}}
+Authorization: Bearer {{otherToken.response.body.$.access_token}}
+
+### 12.3 VG1: avboka gästens bokning direkt -> FÖRVÄNTAT: 200 med tom lista [] (ingen rad matchar enligt RLS)
+PATCH {{supabaseUrl}}/rest/v1/bookings?booking_id=eq.{{bookingA.response.body.$.booking_id}}
+apikey: {{key}}
+Authorization: Bearer {{otherToken.response.body.$.access_token}}
+Content-Type: application/json
+Prefer: return=representation
+
+{ "status": "cancelled" }
+
+### 12.4 VG1: ändra seed-boende direkt -> FÖRVÄNTAT: 200 med tom lista []
+PATCH {{supabaseUrl}}/rest/v1/properties?property_id=eq.{{propertyId}}
+apikey: {{key}}
+Authorization: Bearer {{otherToken.response.body.$.access_token}}
+Content-Type: application/json
+Prefer: return=representation
+
+{ "price_per_night": 1 }
+
+### 12.5 VG4: skapa en redan bekräftad bokning direkt -> FÖRVÄNTAT: 400, code P0001, hint INVALID_STATUS_TRANSITION
+POST {{supabaseUrl}}/rest/v1/bookings
+apikey: {{key}}
+Authorization: Bearer {{otherToken.response.body.$.access_token}}
+Content-Type: application/json
+Prefer: return=representation
+
+{
+  "property_id": "{{propertyId}}",
+  "user_id": "{{otherToken.response.body.$.user.id}}",
+  "guest_name": "Direkt", "guest_email": "other.test@example.com",
+  "check_in": "2031-02-01", "check_out": "2031-02-03", "guests": 2,
+  "status": "confirmed"
+}
+
+### 12.6 VG2: dubbelbokning direkt (bokning A ligger på 10-12 juni 2030) -> FÖRVÄNTAT: 409, code 23P01 (exclusion constraint)
+POST {{supabaseUrl}}/rest/v1/bookings
+apikey: {{key}}
+Authorization: Bearer {{otherToken.response.body.$.access_token}}
+Content-Type: application/json
+Prefer: return=representation
+
+{
+  "property_id": "{{propertyId}}",
+  "user_id": "{{otherToken.response.body.$.user.id}}",
+  "guest_name": "Direkt", "guest_email": "other.test@example.com",
+  "check_in": "2030-06-10", "check_out": "2030-06-12", "guests": 2
+}
+
+### 12.7 VG3: för många gäster direkt -> FÖRVÄNTAT: 400, hint CAPACITY_EXCEEDED
+POST {{supabaseUrl}}/rest/v1/bookings
+apikey: {{key}}
+Authorization: Bearer {{otherToken.response.body.$.access_token}}
+Content-Type: application/json
+Prefer: return=representation
+
+{
+  "property_id": "{{propertyId}}",
+  "user_id": "{{otherToken.response.body.$.user.id}}",
+  "guest_name": "Direkt", "guest_email": "other.test@example.com",
+  "check_in": "2031-02-01", "check_out": "2031-02-03", "guests": 99
+}
+
+### 12.8 VG5: incheckning i det förflutna direkt -> FÖRVÄNTAT: 400, hint PAST_CHECKIN_NOT_ALLOWED
+POST {{supabaseUrl}}/rest/v1/bookings
+apikey: {{key}}
+Authorization: Bearer {{otherToken.response.body.$.access_token}}
+Content-Type: application/json
+Prefer: return=representation
+
+{
+  "property_id": "{{propertyId}}",
+  "user_id": "{{otherToken.response.body.$.user.id}}",
+  "guest_name": "Direkt", "guest_email": "other.test@example.com",
+  "check_in": "2020-01-01", "check_out": "2020-01-03", "guests": 2
+}
+
+### 12.9 VG6: skicka ett eget pris direkt -> FÖRVÄNTAT: 201, total_price 1700 och price_per_night 850, trots att vi skickade 1 (databasen skriver över det)
+POST {{supabaseUrl}}/rest/v1/bookings
+apikey: {{key}}
+Authorization: Bearer {{otherToken.response.body.$.access_token}}
+Content-Type: application/json
+Prefer: return=representation
+
+{
+  "property_id": "{{propertyId}}",
+  "user_id": "{{otherToken.response.body.$.user.id}}",
+  "guest_name": "Direkt", "guest_email": "other.test@example.com",
+  "check_in": "2031-03-01", "check_out": "2031-03-03", "guests": 2,
+  "total_price": 1, "price_per_night": 1
+}
+
+### 12.10 VG1: boka i någon annans namn direkt -> FÖRVÄNTAT: 403 eller 401, code 42501 (RLS: user_id måste vara ditt eget)
+POST {{supabaseUrl}}/rest/v1/bookings
+apikey: {{key}}
+Authorization: Bearer {{otherToken.response.body.$.access_token}}
+Content-Type: application/json
+Prefer: return=representation
+
+{
+  "property_id": "{{propertyId}}",
+  "user_id": "5db14e43-c106-46c3-aaae-d0aed5bcc056",
+  "guest_name": "Falsk", "guest_email": "falsk@example.com",
+  "check_in": "2031-04-01", "check_out": "2031-04-03", "guests": 2
+}
+
+# =====================================================================
+# 13. AVSLUTA
+# =====================================================================
+
+### 13.1 Logga ut -> FÖRVÄNTAT: 200
+POST {{baseUrl}}/auth/logout

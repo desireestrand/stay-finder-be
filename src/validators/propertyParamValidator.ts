@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { getValidatorError } from "../utils/validation.js";
 
 const propertyParamSchema = z.object({
-  propertyId: z.uuid("Property id must be a valid UUID"),
+  propertyId: z.uuid("Property ID must be a valid UUID"),
 });
 
 const propertyKindParamSchema = z.object({

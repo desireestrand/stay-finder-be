@@ -9,23 +9,22 @@ import {
   propertyParamValidator,
 } from "../validators/propertyParamValidator.js";
 import { propertyQueryValidator } from "../validators/propertyQueryValidator.js";
-import { requireAuth } from "../middleware/auth.js";
-import type { User } from "@supabase/supabase-js";
-import type { NewProperty, Property } from "../types/property.js";
+import { requireAuth, getAuthUser } from "../middleware/auth.js";
+import type { PropertyBody } from "../types/property.js";
+import { handleRouteError } from "../utils/handleRouteError.js";
 
 const properties = new Hono({ strict: false });
 
 properties.get("/me", requireAuth, async (c) => {
   try {
     const supabase = c.get("supabase");
-
-    const user = c.get("user") as User;
+    const user = getAuthUser(c);
 
     const myProperties = await db.getPropertiesByUserId(supabase, user.id);
 
     return c.json(myProperties, 200);
   } catch (error) {
-    return c.json({ error: "Failed to fetch your properties" }, 500);
+    return handleRouteError(c, error, "Failed to fetch your properties");
   }
 });
 
@@ -35,20 +34,11 @@ properties.get("/", propertyQueryValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
 
-    const properties = await db.getProperties(supabase, filters);
+    const fetchedProperties = await db.getProperties(supabase, filters);
 
-    return c.json(properties);
+    return c.json(fetchedProperties);
   } catch (error) {
-    return c.json(
-      {
-        data: [],
-        count: 0,
-        offset: filters.offset,
-        limit: filters.limit,
-        error: "Failed to fetch properties",
-      },
-      500,
-    );
+    return handleRouteError(c, error, "Failed to fetch properties");
   }
 });
 
@@ -59,16 +49,18 @@ properties.get(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { kind } = c.req.valid("param");
-
       const filters = c.req.valid("query");
 
-      const properties = await db.getPropertiesByKind(supabase, kind, filters);
+      const fetchedProperties = await db.getPropertiesByKind(
+        supabase,
+        kind,
+        filters,
+      );
 
-      return c.json(properties);
+      return c.json(fetchedProperties);
     } catch (error) {
-      return c.json({ error: "Failed to fetch properties by kind" }, 500);
+      return handleRouteError(c, error, "Failed to fetch properties by kind");
     }
   },
 );
@@ -76,7 +68,6 @@ properties.get(
 properties.get("/:propertyId", propertyParamValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
-
     const { propertyId } = c.req.valid("param");
 
     const property = await db.getPropertyById(supabase, propertyId);
@@ -87,17 +78,15 @@ properties.get("/:propertyId", propertyParamValidator, async (c) => {
 
     return c.json(property);
   } catch (error) {
-    return c.json({ error: "Failed to fetch property" }, 500);
+    return handleRouteError(c, error, "Failed to fetch property");
   }
 });
 
 properties.post("/", requireAuth, propertyValidator, async (c) => {
   try {
     const supabase = c.get("supabase");
-
-    const body: NewProperty = c.req.valid("json");
-
-    const user = c.get("user") as User;
+    const body: PropertyBody = c.req.valid("json");
+    const user = getAuthUser(c);
 
     const property = await db.createProperty(supabase, {
       ...body,
@@ -106,7 +95,7 @@ properties.post("/", requireAuth, propertyValidator, async (c) => {
 
     return c.json(property, 201);
   } catch (error) {
-    return c.json({ error: "Failed to create property" }, 400);
+    return handleRouteError(c, error, "Failed to create property");
   }
 });
 
@@ -118,12 +107,8 @@ properties.patch(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { propertyId } = c.req.valid("param");
-
-      const updates: Partial<Property> = c.req.valid("json");
-
-      delete updates.user_id;
+      const updates: Partial<PropertyBody> = c.req.valid("json");
 
       const updatedProperty = await db.patchPropertyById(
         supabase,
@@ -137,7 +122,7 @@ properties.patch(
 
       return c.json(updatedProperty);
     } catch (error) {
-      return c.json({ error: "Failed to update property" }, 400);
+      return handleRouteError(c, error, "Failed to update property");
     }
   },
 );
@@ -150,17 +135,17 @@ properties.put(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { propertyId } = c.req.valid("param");
-
-      const body: NewProperty = c.req.valid("json");
-
-      delete body.user_id;
+      const body: PropertyBody = c.req.valid("json");
+      const user = getAuthUser(c);
 
       const updatedProperty = await db.updatePropertyById(
         supabase,
         propertyId,
-        body,
+        {
+          ...body,
+          user_id: user.id,
+        },
       );
 
       if (!updatedProperty) {
@@ -169,7 +154,7 @@ properties.put(
 
       return c.json(updatedProperty);
     } catch (error) {
-      return c.json({ error: "Failed to update property" }, 400);
+      return handleRouteError(c, error, "Failed to update property");
     }
   },
 );
@@ -181,7 +166,6 @@ properties.delete(
   async (c) => {
     try {
       const supabase = c.get("supabase");
-
       const { propertyId } = c.req.valid("param");
 
       const deletedProperty = await db.deletePropertyById(supabase, propertyId);
@@ -195,7 +179,7 @@ properties.delete(
         200,
       );
     } catch (error) {
-      return c.json({ error: "Failed to delete property" }, 500);
+      return handleRouteError(c, error, "Failed to delete property");
     }
   },
 );

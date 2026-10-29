@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { getValidatorError } from "../utils/validation.js";
 
 const authSchema = z.object({
-  email: z.email("Valid email is required"),
+  email: z.email("Valid email address is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
