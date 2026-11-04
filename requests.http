@@ -7,6 +7,7 @@
 @key = sb_publishable_RTwWiKfGtwqpqCBKJCLRhQ_BJTytxIL
 
 @password = password123
+@ownerPassword = securepassword123
 @ownerEmail = test@example.com
 @guestEmail = guest.test@example.com
 @otherEmail = other.test@example.com
@@ -28,7 +29,7 @@ GET {{supabaseUrl}}/rest/v1/bookings?select=*
 apikey: {{key}}
 Authorization: Bearer {{key}}
 
-### 1.3 Anonym INSERT på boenden -> FÖRVÄNTAT: 401 eller 403 (RLS nekar)
+### 1.3 Anonym INSERT på boenden -> FÖRVÄNTAT: 401 (RLS nekar)
 POST {{supabaseUrl}}/rest/v1/properties
 apikey: {{key}}
 Authorization: Bearer {{key}}
@@ -45,7 +46,7 @@ Content-Type: application/json
   "kind": "cabin"
 }
 
-### 1.4 Anonym DELETE -> FÖRVÄNTAT: ingenting raderas ([] eller nekas)
+### 1.4 Anonym DELETE -> FÖRVÄNTAT: 200 ingenting raderas ([] eller nekas)
 DELETE {{supabaseUrl}}/rest/v1/properties?property_id=eq.{{propertyId}}
 apikey: {{key}}
 Authorization: Bearer {{key}}
@@ -606,7 +607,7 @@ Content-Type: application/json
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
-{ "email": "{{ownerEmail}}", "password": "{{password}}" }
+{ "email": "{{ownerEmail}}", "password": "{{ownerPassword}}" }
 
 ### 7.11 Ägaren ser ALLA bokningar för sitt boende -> FÖRVÄNTAT: 200, innehåller gästens (A-E) och utomståendes bokning
 GET {{baseUrl}}/bookings/properties/{{propertyId}}
@@ -646,7 +647,7 @@ Content-Type: application/json
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
-{ "email": "{{ownerEmail}}", "password": "{{password}}" }
+{ "email": "{{ownerEmail}}", "password": "{{ownerPassword}}" }
 
 ### 8.6 Ägaren bekräftar bokning B (pending -> confirmed) -> FÖRVÄNTAT: 200, status "confirmed"
 PATCH {{baseUrl}}/bookings/properties/{{propertyId}}/{{bookingB.response.body.$.booking_id}}
@@ -755,14 +756,14 @@ GET {{baseUrl}}/bookings/{{bookingB.response.body.$.booking_id}}
 DELETE {{baseUrl}}/bookings/properties/{{propertyId}}/00000000-0000-4000-8000-000000000000
 
 # =====================================================================
-# 10. PRISET FRYSS VID BOKNINGEN (VG6)
+# 10. PRISET FRYSER VID BOKNINGEN (VG6)
 # =====================================================================
 
 ### 10.1 Logga in som ägare
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
-{ "email": "{{ownerEmail}}", "password": "{{password}}" }
+{ "email": "{{ownerEmail}}", "password": "{{ownerPassword}}" }
 
 ### 10.2 Ägaren höjer priset från 850 till 5000 kr -> FÖRVÄNTAT: 200
 PATCH {{baseUrl}}/properties/{{propertyId}}
@@ -798,7 +799,7 @@ Content-Type: application/json
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
-{ "email": "{{ownerEmail}}", "password": "{{password}}" }
+{ "email": "{{ownerEmail}}", "password": "{{ownerPassword}}" }
 
 ###
 PATCH {{baseUrl}}/properties/{{propertyId}}
